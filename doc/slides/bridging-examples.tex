@@ -1,0 +1,24 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{amsmath,amssymb,tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\definecolor{ink}{HTML}{142D4E}
+\definecolor{accent}{HTML}{176B73}
+\definecolor{modelbg}{HTML}{EDF6F5}
+\definecolor{concretebg}{HTML}{F0F3F8}
+\setbeamercolor{normal text}{fg=ink,bg=white}
+\setbeamercolor{frametitle}{fg=ink}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamersize{text margin left=7mm,text margin right=7mm}
+\newcommand{\ok}{\operatorname{ok}}
+\newcommand{\cadd}{\operatorname{add}}
+\newcommand{\cmul}{\operatorname{mul}}
+\newcommand{\bind}{\mathbin{\gg\!=}}
+\tikzset{
+  property/.style={draw=accent!60,rounded corners=5pt,line width=0.8pt,
+    text width=12.3cm,align=center,inner sep=11pt},
+  refinement/.style={-{Latex[length=3mm]},line width=1.2pt,accent}
+}
+\begin{document}
+\input{bridging-frames.tex}
+\end{document}
