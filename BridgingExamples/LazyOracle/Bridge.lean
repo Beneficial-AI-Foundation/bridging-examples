@@ -1,11 +1,10 @@
 import Generated.LazyOracle.Funs
+import BridgingExamples.LazyOracle.Spec
 import Aeneas.Std.WP
 import VCVio.OracleComp.QueryTracking.CachingOracle
 import VCVio.OracleComp.SimSemantics.StateT.StateProjection
 
 namespace bridge_lazy_oracle.Bridge
-
-abbrev ByteSpec : OracleSpec Bool := Bool →ₒ Fin 256
 
 def byteToModel (value : Aeneas.Std.U8) : Fin 256 :=
   value.bv.toFin
@@ -25,7 +24,8 @@ def implementation {R : Type} (rngInst : ByteRng R) :
     Prod.map byteToModel id <$>
       LazyOracle.query rngInst state.1 key state.2
 
-def model {R : Type} (rngInst : ByteRng R) :
+/-- Internal proof model of the Rust cache. The public specification is `eagerExperiment`. -/
+def lazyCacheModel {R : Type} (rngInst : ByteRng R) :
     QueryImpl ByteSpec
       (StateT (OracleSpec.QueryCache ByteSpec × R) Aeneas.Std.Result) :=
   QueryImpl.withCachingAux (spec := ByteSpec)
@@ -58,9 +58,9 @@ theorem query_refines {R : Type} (rngInst : ByteRng R)
     (key : Bool) (state : LazyOracle × R) :
     Prod.map id stateToModel <$>
         (implementation rngInst key).run state =
-      (model rngInst key).run (stateToModel state) := by
+      (lazyCacheModel rngInst key).run (stateToModel state) := by
   rcases state with ⟨⟨falseValue, trueValue⟩, rngState⟩
-  cases key <;> simp only [implementation, model, stateToModel, cacheToModel,
+  cases key <;> simp only [implementation, lazyCacheModel, stateToModel, cacheToModel,
     LazyOracle.query, QueryImpl.withCachingAux_apply]
   · cases falseValue with
     | some value => rfl
@@ -111,10 +111,10 @@ theorem client_refines {R α : Type} (rngInst : ByteRng R)
     (client : OracleComp ByteSpec α) (state : LazyOracle × R) :
     Prod.map id stateToModel <$>
         (_root_.simulateQ (implementation rngInst) client).run state =
-      (_root_.simulateQ (model rngInst) client).run
+      (_root_.simulateQ (lazyCacheModel rngInst) client).run
         (stateToModel state) := by
   exact OracleComp.map_run_simulateQ_eq_of_query_map_eq
-    (implementation rngInst) (model rngInst) stateToModel
+    (implementation rngInst) (lazyCacheModel rngInst) stateToModel
     (query_refines rngInst) client state
 
 theorem initialized_client_refines {R α : Type} (rngInst : ByteRng R)
@@ -124,7 +124,7 @@ theorem initialized_client_refines {R α : Type} (rngInst : ByteRng R)
       Prod.map id stateToModel <$>
         (_root_.simulateQ (implementation rngInst) client).run
           (self, rngState)) =
-      (_root_.simulateQ (model rngInst) client).run
+      (_root_.simulateQ (lazyCacheModel rngInst) client).run
         (∅, rngState) := by
   have hstate :
       stateToModel ({ false_value := none, true_value := none }, rngState) =

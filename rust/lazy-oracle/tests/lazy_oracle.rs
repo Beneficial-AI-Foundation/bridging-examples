@@ -1,6 +1,18 @@
 use bridge_lazy_oracle::{LazyOracle, TwoByteRng};
 
 #[test]
+fn first_draw_is_assigned_to_first_queried_key() {
+    let mut oracle = LazyOracle::new();
+    let mut rng = TwoByteRng::new(7, 19);
+    assert_eq!(oracle.query(true, &mut rng), 7);
+    assert_eq!(oracle.query(true, &mut rng), 7);
+    assert_eq!((rng.next, rng.tail), (Some(19), None));
+    assert_eq!(oracle.query(false, &mut rng), 19);
+    assert_eq!((oracle.false_value, oracle.true_value), (Some(19), Some(7)));
+    assert_eq!((rng.next, rng.tail), (None, None));
+}
+
+#[test]
 fn miss_consumes_one_and_caches() {
     let mut oracle = LazyOracle::new();
     let mut rng = TwoByteRng::new(7, 19);

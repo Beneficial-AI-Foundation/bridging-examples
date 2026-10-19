@@ -57,22 +57,41 @@ Read the [Rust code](rust/commitment/src/lib.rs), its
 [generated Lean translation](Generated/Commitment/Funs.lean), and the
 [bridge proofs](BridgingExamples/Commitment/Bridge.lean).
 
-### Lazy and eager sampling: connecting stateful code to a probability model
+### Lazy Rust implementation, eager VCVio specification
 
-The second Rust example implements a tiny oracle with two possible keys. On the first query to
-a key, it obtains a byte from an RNG and caches it. Repeated queries return the cached answer.
+The Rust oracle has two possible keys. It draws a byte only when a key is first
+queried, then caches the answer. Repeated queries return the cached answer.
+This is lazy sampling.
 
-We first prove that the extracted code agrees with VCVio's cache model. We then initialize a
-simple RNG fixture with two independent uniform bytes and prove that clients observe the same
-output distribution as if the entire answer table had been sampled in advance. This remains
-true when a client chooses later queries based on earlier answers.
+The VCVio specification samples a complete answer table before the client runs.
+Every query reads that table. This is eager sampling. The specification has no
+cache or RNG state.
 
-The proof must track both the cache and the unused random bytes. Uniform initialization is part
-of the Lean experiment; we do not claim that an operating-system RNG realizes that experiment.
+The main theorem, `lazy_eq_eager`, connects these two experiments. It proves equal
+output distributions for every supported client, including clients that choose
+later queries from earlier answers. The client observes answers, not internal
+state, RNG calls, or timing.
 
-Read the [Rust code](rust/lazy-oracle/src/lib.rs), the
-[deterministic bridge](BridgingExamples/LazyOracle/Bridge.lean), and the
-[probability proof](BridgingExamples/LazyOracle/ProbabilityBridge.lean).
+The theorem takes an explicit randomness contract. Each draw must succeed and
+produce a uniform byte independent of the remaining RNG state. The contract
+covers two draws because there are only two keys. The Rust `ByteRng` trait alone
+does not provide this guarantee.
+
+The proof connects the extracted Rust code to an internal lazy cache model,
+then uses VCVio's lazy-to-eager equivalence. The lazy model is an intermediate
+proof step. The public specification is the eager table.
+
+The `TwoByteRng` fixture provides a concrete instance of the contract when Lean
+initializes its two entropy bytes independently and uniformly. These bytes are
+assigned to keys on demand, in first-query order. The fixture does not establish
+a randomness guarantee for an operating-system RNG.
+
+Start with the [eager specification](BridgingExamples/LazyOracle/Spec.lean) and
+[main bridge theorem](BridgingExamples/LazyOracle/ProbabilityBridge.lean).
+The [Rust implementation](rust/lazy-oracle/src/lib.rs),
+[cache refinement proof](BridgingExamples/LazyOracle/Bridge.lean), and
+[fixture contract proof](BridgingExamples/LazyOracle/Fixture.lean) supply the implementation
+and supporting proofs.
 
 For an even smaller introduction, the [byte-identity example](BridgingExamples/Smoke.lean)
 shows the complete path from an extracted function to a simple mathematical specification.

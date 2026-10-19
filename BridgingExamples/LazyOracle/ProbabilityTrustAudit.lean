@@ -1,7 +1,10 @@
-import BridgingExamples.LazyOracle.ProbabilityBridge
+import BridgingExamples.LazyOracle.Fixture
 
 #print axioms bridge_lazy_oracle.Bridge.byteToModel_modelToByte
-#print axioms bridge_lazy_oracle.Bridge.evalDist_model_query_residualRng
-#print axioms bridge_lazy_oracle.Bridge.evalDist_model_client_residualRng
-#print axioms bridge_lazy_oracle.Bridge.evalDist_implementationExperiment_eq_randomOracle
-#print axioms bridge_lazy_oracle.Bridge.evalDist_implementationExperiment_eq_uniformTable
+#print axioms bridge_lazy_oracle.Bridge.evalDist_lazyCacheModel_query_residualRng
+#print axioms bridge_lazy_oracle.Bridge.evalDist_lazyCacheModel_client_residualRng
+#print axioms bridge_lazy_oracle.Bridge.evalDist_lazyExperiment_eq_randomOracle
+#print axioms bridge_lazy_oracle.Bridge.lazy_eq_eager
+
+#print axioms bridge_lazy_oracle.Bridge.fixtureContract
+#print axioms bridge_lazy_oracle.Bridge.fixture_lazy_eq_eager

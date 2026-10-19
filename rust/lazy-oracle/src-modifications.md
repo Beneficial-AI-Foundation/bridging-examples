@@ -1,3 +1,5 @@
 # Extraction repairs
 
-No extraction repairs. The baseline is the exact Rust source frozen in approved EXEC_PLAN_n1.md. No Git repository exists. Zero diff hunks, zero records, zero Category-B changes.
+The Rust source requires no extraction repairs. The lazy-to-eager redesign changes
+the handwritten Lean specification, probability contract, and proofs. The Rust
+implementation and its generated Lean translation retain their existing behavior.
