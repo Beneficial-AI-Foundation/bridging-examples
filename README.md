@@ -74,7 +74,9 @@ state, RNG calls, or timing.
 
 The theorem takes an explicit randomness contract. Each draw must succeed and
 produce a uniform byte independent of the remaining RNG state. The contract
-covers two draws because there are only two keys. The Rust `ByteRng` trait alone
+excludes RNGs that keep a log of returned bytes, even if their output bytes are
+independent and uniform. This is a sufficient condition for the theorem.
+The contract covers two draws because there are only two keys. The Rust `ByteRng` trait alone
 does not provide this guarantee.
 
 The proof connects the extracted Rust code to an internal lazy cache model,

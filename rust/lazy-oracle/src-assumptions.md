@@ -8,8 +8,10 @@ The eager VCVio specification samples a complete `Bool → Fin 256` table before
 answering queries. The Rust implementation draws only on cache misses.
 `lazy_eq_eager` proves equal client output distributions under `RngContract`.
 The contract specifies a joint law for each draw and the remaining RNG state.
-It requires independent uniform bytes, successful draws, and initial state
-distributions with total probability one. It covers at most two draws.
+It requires successful uniform draws whose returned byte is independent of the
+remaining RNG state. This excludes RNGs that retain a log of returned bytes,
+even when their output bytes are independent and uniform. The contract is a
+sufficient condition for the theorem and covers at most two draws.
 
 `TwoByteRng` is a deterministic fixture. It fails when exhausted. `fixtureContract`
 proves the contract when Lean supplies independent uniform initial entropy.

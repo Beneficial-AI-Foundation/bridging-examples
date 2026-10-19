@@ -24,12 +24,14 @@ def remaining (cache : OracleSpec.QueryCache ByteSpec) : Nat :=
 /-- A distribution on RNG states for each remaining draw budget.
 
 `draw` states a joint law: the next byte is uniform and independent of the
-remaining RNG state. This is stronger than uniform marginal bytes.
+remaining RNG state. This is stronger than independent uniform output bytes:
+the post-draw state must carry no information about the returned byte.
+RNGs that retain a log of returned bytes are excluded, even when the conclusion
+of `lazy_eq_eager` holds for them.
 Only two draws are needed. No condition is imposed on exhausted RNG calls.
 -/
 structure RngContract {R : Type} (rngInst : ByteRng R) where
   states : Nat → ProbComp R
-  lossless : ∀ n, n ≤ 2 → Pr[⊥ | states n] = 0
   draw : ∀ n, n < 2 →
     𝒟[(fun rng => Prod.map byteToModel id <$> rngInst.next_u8 rng) <$> states (n + 1)] =
     𝒟[do
@@ -217,10 +219,8 @@ theorem evalDist_lazyExperiment_eq_randomOracle
       𝒟[do
         let _ ← residualRng contract cache
         pure value] = 𝒟[(pure value : ProbComp (Aeneas.Std.Result α))] := by
-    have hfailure : Pr[⊥ | residualRng contract cache] = 0 := by
-      apply contract.lossless
-      unfold remaining
-      split <;> split <;> omega
+    have hfailure : Pr[⊥ | residualRng contract cache] = 0 :=
+      probFailure_of_liftM_PMF _
     apply evalDist_ext
     intro output
     rw [probOutput_bind_const, hfailure, tsub_zero, one_mul]

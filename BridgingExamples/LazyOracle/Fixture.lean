@@ -33,10 +33,6 @@ def fixtureStates : Nat → ProbComp TwoByteRng
 
 def fixtureContract : RngContract TwoByteRng.Insts.Bridge_lazy_oracleByteRng where
   states := fixtureStates
-  lossless := by
-    intro n hn
-    rcases (show n = 0 ∨ n = 1 ∨ n = 2 by omega) with rfl | rfl | rfl <;>
-      simp [fixtureStates]
   draw := by
     intro n hn
     rcases (show n = 0 ∨ n = 1 by omega) with rfl | rfl <;>
