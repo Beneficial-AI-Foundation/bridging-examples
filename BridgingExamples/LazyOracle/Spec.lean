@@ -5,6 +5,10 @@ import VCVio.OracleComp.QueryTracking.RandomOracle.EagerTable
 
 The specification samples a complete table before the client runs. It has no
 cache and no RNG state. The bridge compares client output distributions.
+
+The probability layer around the Aeneas translation and the RNG contract belong
+to `ProbabilityBridge.lean`. The concrete uniform initialization and its contract
+proof belong to `Fixture.lean`. They are not part of this abstract specification.
 -/
 
 namespace bridge_lazy_oracle.Bridge

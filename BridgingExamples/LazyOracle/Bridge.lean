@@ -4,6 +4,19 @@ import Aeneas.Std.WP
 import VCVio.OracleComp.QueryTracking.CachingOracle
 import VCVio.OracleComp.SimSemantics.StateT.StateProjection
 
+/-!
+# Deterministic refinement of the translated Rust oracle
+
+Aeneas supplies the operations in `Generated.LazyOracle.Funs`. Given an RNG
+implementation and state, those operations have deterministic behavior.
+The proofs here relate that behavior to a cache model, including failure paths.
+They impose no randomness condition.
+
+`ProbabilityBridge.lean` adds a handwritten probability layer and RNG contract.
+`Fixture.lean` supplies uniform initialization and proves the contract for the
+translated `TwoByteRng`. The eager specification remains in `Spec.lean`.
+-/
+
 namespace bridge_lazy_oracle.Bridge
 
 def byteToModel (value : Aeneas.Std.U8) : Fin 256 :=

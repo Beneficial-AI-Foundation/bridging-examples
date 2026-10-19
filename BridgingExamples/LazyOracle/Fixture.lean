@@ -3,9 +3,19 @@ import BridgingExamples.LazyOracle.ProbabilityBridge
 /-!
 # A concrete instance of the RNG contract
 
-The Rust fixture consumes a finite stream of entropy. The Lean experiment
-initializes that stream uniformly. This file proves that it satisfies the
-contract used by the general bridge. It does not model an operating-system RNG.
+This handwritten file supplies the concrete randomness setup for the bridge.
+The Rust `TwoByteRng` and its Aeneas translation deterministically consume two
+supplied bytes. Neither implementation generates randomness.
+
+`fixtureStates 2` introduces randomness in Lean: sample two independent uniform
+bytes, then place them in the translated RNG state. `fixtureContract` proves that
+this setup satisfies the handwritten `RngContract`. `fixture_lazy_eq_eager` then
+applies the general bridge theorem to this setup.
+
+The bytes are sampled before the client runs. Their assignment to keys remains
+lazy: the first new key receives the first byte, and the other key receives the
+second. The eager specification samples a table with values already assigned to
+keys. This example does not model an operating-system RNG.
 -/
 
 open OracleComp OracleSpec
@@ -20,7 +30,12 @@ theorem byteToModel_modelToByte (value : Fin 256) :
   change (BitVec.ofFin (w := 8) value).toFin = value
   simp
 
-/-- The fixture has zero, one, or two independent uniform bytes left. -/
+/-- Handwritten uniform initialization of the translated deterministic fixture.
+
+The bridge uses budgets zero through two. In particular, `fixtureStates 2` samples
+two independent uniform bytes before any query. These sampling operations come
+from the Lean experiment, not from Rust or the Aeneas translation.
+-/
 def fixtureStates : Nat → ProbComp TwoByteRng
   | 0 => pure { next := none, tail := none }
   | 1 => do
@@ -31,6 +46,8 @@ def fixtureStates : Nat → ProbComp TwoByteRng
       let second ← $ᵗ (Fin 256)
       pure { next := some (modelToByte first), tail := some (modelToByte second) }
 
+/-- Prove the required draw law for the translated fixture with `fixtureStates`.
+This is a Lean proof, not an assumed axiom or a runtime randomness test. -/
 def fixtureContract : RngContract TwoByteRng.Insts.Bridge_lazy_oracleByteRng where
   states := fixtureStates
   draw := by
@@ -38,7 +55,7 @@ def fixtureContract : RngContract TwoByteRng.Insts.Bridge_lazy_oracleByteRng whe
     rcases (show n = 0 ∨ n = 1 by omega) with rfl | rfl <;>
       simp [fixtureStates, TwoByteRng.Insts.Bridge_lazy_oracleByteRng.next_u8] <;> rfl
 
-/-- The concrete fixture is an instance of the general lazy-to-eager bridge. -/
+/-- Apply the general bridge after supplying uniform initialization and its contract proof. -/
 theorem fixture_lazy_eq_eager {α : Type} (client : OracleComp ByteSpec α) :
     𝒟[lazyExperiment TwoByteRng.Insts.Bridge_lazy_oracleByteRng
       (fixtureStates 2) client] =

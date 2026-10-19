@@ -3,9 +3,21 @@ import BridgingExamples.LazyOracle.Bridge
 /-!
 # Bridge from lazy Rust execution to eager VCVio sampling
 
-`RngContract` specifies the randomness assumption independently of a concrete RNG.
-`lazyExperiment` executes the extracted Rust oracle. `lazy_eq_eager` compares it
-with `eagerExperiment` from `Spec.lean` for every oracle client.
+This file is handwritten bridge code. Aeneas translates Rust operations and state
+changes into deterministic Lean functions. Its generated code supplies no
+probability distribution over RNG states.
+
+`lazyExperiment` introduces the probability layer around those functions. It
+samples the supplied `initialRng` distribution, then runs the translated oracle.
+For the concrete fixture, `fixtureStates 2` in `Fixture.lean` supplies two
+independent uniform bytes. The translated `TwoByteRng` only consumes those bytes.
+
+`RngContract` states the conditions required of an RNG and its state distributions.
+It neither generates randomness nor adds a runtime check. `fixtureContract`
+proves those conditions for the uniformly initialized translated fixture.
+`lazy_eq_eager` then proves equivalence with the independently defined eager
+specification in `Spec.lean`, conditional on the contract. `Fixture.lean` applies
+that theorem to obtain the concrete result.
 
 The cache model and the lazy VCVio random oracle are intermediate proof steps.
 The remaining RNG-state distribution is tracked jointly with each answer so that
@@ -21,7 +33,11 @@ def remaining (cache : OracleSpec.QueryCache ByteSpec) : Nat :=
   (if (cache false).isSome then 0 else 1) +
   (if (cache true).isSome then 0 else 1)
 
-/-- A distribution on RNG states for each remaining draw budget.
+/-- Handwritten bridge contract for the translated RNG and its state distributions.
+
+`states` supplies a probability distribution for each remaining draw budget.
+`draw` is a proof obligation about those distributions and the translated
+`next_u8` operation. It does not introduce a random operation into generated code.
 
 `draw` states a joint law: the next byte is uniform and independent of the
 remaining RNG state. This is stronger than independent uniform output bytes:
@@ -163,7 +179,13 @@ theorem evalDist_lazyCacheModel_client_residualRng
       _ = _ := by
         simp only [simulateQ_bind, simulateQ_spec_query, StateT.run_bind, bind_assoc]
 
-/-- Run the extracted lazy Rust oracle from an explicit distribution on RNG states. -/
+/-- Handwritten probability layer around the deterministic Aeneas translation.
+
+Sample `initialRng`, then run the translated oracle from that state. The concrete
+fixture uses `fixtureStates 2`, defined in `Fixture.lean`, to supply uniform bytes.
+This definition accepts any initial distribution; the bridge theorem requires
+the conditions in `RngContract`.
+-/
 def lazyExperiment
     {R α : Type} (rngInst : ByteRng R)
     (initialRng : ProbComp R)
@@ -252,8 +274,12 @@ theorem evalDist_lazyExperiment_eq_randomOracle
       exact hresidual answerAndCache.2
         (pure answerAndCache.1 : Aeneas.Std.Result α)
 
-/-- Main bridge: every client observes the eager specification when the Rust
-RNG satisfies the joint draw contract. Clients can choose queries adaptively.
+/-- Main bridge, conditional on the handwritten Lean RNG contract.
+
+Randomness enters the implementation experiment through `contract.states 2`.
+The contract's proof of the joint draw law justifies the comparison with the eager
+specification. Aeneas supplies the translated operations, not this probability law.
+Clients can choose queries adaptively.
 Internal cache contents and RNG consumption are not observations in this theorem. -/
 theorem lazy_eq_eager
     {R α : Type} {rngInst : ByteRng R}
