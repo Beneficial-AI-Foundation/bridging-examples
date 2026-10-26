@@ -2,11 +2,11 @@ import BridgingExamples.Smoke
 
 /-! Kernel dependency checks for the smoke bridge and the upstream results we plan to reuse. -/
 
-/-- info: 'BridgingExamples.Smoke.identity_byte_returns' does not depend on any axioms -/
+/-- info: 'BridgingExamples.Smoke.identity_byte_returns' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms BridgingExamples.Smoke.identity_byte_returns
 
-/-- info: 'BridgingExamples.Smoke.implementation_eq_specification' does not depend on any axioms -/
+/-- info: 'BridgingExamples.Smoke.implementation_eq_specification' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms BridgingExamples.Smoke.implementation_eq_specification
 

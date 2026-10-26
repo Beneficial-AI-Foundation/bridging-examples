@@ -28,6 +28,12 @@ open OracleComp OracleSpec
 
 namespace bridge_lazy_oracle.Bridge
 
+private theorem map_distribution_eq {α β : Type}
+    [MeasurableSpace α] [DiscreteMeasurableSpace α] [MeasurableSpace β]
+    {x y : ProbComp α} (h : 𝒟[x] = 𝒟[y]) (f : α → β) :
+    𝒟[f <$> x] = 𝒟[f <$> y] := by
+  rw [evalDist_map_of_discrete, evalDist_map_of_discrete, h]
+
 /-- Number of keys whose answers have not yet been assigned. -/
 def remaining (cache : OracleSpec.QueryCache ByteSpec) : Nat :=
   (if (cache false).isSome then 0 else 1) +
@@ -73,7 +79,7 @@ theorem evalDist_lazyCacheModel_query_residualRng
       pure (Aeneas.Std.Result.ok
         (answerAndCache.1, (answerAndCache.2, rng)))] := by
   have hmiss (key : Bool) (n : Nat) (hn : n < 2) :=
-    evalDist_map_eq_of_evalDist_eq (contract.draw n hn)
+    map_distribution_eq (contract.draw n hn)
       (fun result => (fun p : Fin 256 × R =>
         (p.1, cache.cacheQuery key p.1, p.2)) <$> result)
   simp only [Function.comp_def, Prod.map,
@@ -83,13 +89,9 @@ theorem evalDist_lazyCacheModel_query_residualRng
       uniformSampleImpl, hfalse, htrue] <;>
     try rfl
   · convert (hmiss false 1 (by omega)) using 1 <;> simp
-    rfl
   · convert (hmiss true 1 (by omega)) using 1 <;> simp
-    rfl
   · convert (hmiss false 0 (by omega)) using 1 <;> simp
-    rfl
   · convert (hmiss true 0 (by omega)) using 1 <;> simp
-    rfl
 
 theorem evalDist_lazyCacheModel_client_residualRng
     {R α : Type} {rngInst : ByteRng R}
@@ -142,6 +144,7 @@ theorem evalDist_lazyCacheModel_client_residualRng
             simp only [simulateQ_bind, simulateQ_spec_query, StateT.run_bind,
               continueResult, map_eq_bind_pure_comp, bind_assoc, pure_bind,
               Function.comp_apply]
+            rfl
       _ = 𝒟[continueResult <$> (do
           let answerAndCache ←
             (OracleSpec.randomOracle (spec := ByteSpec) key).run cache
@@ -149,7 +152,7 @@ theorem evalDist_lazyCacheModel_client_residualRng
           pure
             (Aeneas.Std.Result.ok
               (answerAndCache.1, (answerAndCache.2, rng))))] :=
-        evalDist_map_eq_of_evalDist_eq
+        map_distribution_eq
           (evalDist_lazyCacheModel_query_residualRng contract key cache) continueResult
       _ = 𝒟[do
           let answerAndCache ←
@@ -173,7 +176,7 @@ theorem evalDist_lazyCacheModel_client_residualRng
           pure
             (Aeneas.Std.Result.ok
               (finalAnswerAndCache.1, (finalAnswerAndCache.2, rng)))] := by
-        refine evalDist_bind_congr' _ ?_
+        refine evalDist_bind_congr _ _ _ ?_
         intro answerAndCache
         exact ih answerAndCache.1 answerAndCache.2
       _ = _ := by
@@ -221,7 +224,7 @@ theorem evalDist_lazyExperiment_eq_randomOracle
     have h := congrArg (Prod.fst <$> ·)
       (initialized_client_refines
         rngInst client rng)
-    simpa [Functor.map_map, Function.comp_def, Prod.map] using h
+    simpa [LazyOracle.new, Functor.map_map, Function.comp_def, Prod.map] using h
   have himplementation :
       lazyExperiment rngInst (contract.states 2) client = (do
         let rng ← residualRng contract (∅ : OracleSpec.QueryCache ByteSpec)
@@ -232,7 +235,7 @@ theorem evalDist_lazyExperiment_eq_randomOracle
               client).run ((∅ : OracleSpec.QueryCache ByteSpec), rng))) := by
     simp [lazyExperiment, residualRng, remaining, hrefine]
   rw [himplementation]
-  have hclient := evalDist_map_eq_of_evalDist_eq
+  have hclient := map_distribution_eq
     (evalDist_lazyCacheModel_client_residualRng contract client
       (∅ : OracleSpec.QueryCache ByteSpec))
     (fun result => Prod.fst <$> result)
@@ -241,11 +244,8 @@ theorem evalDist_lazyExperiment_eq_randomOracle
       𝒟[do
         let _ ← residualRng contract cache
         pure value] = 𝒟[(pure value : ProbComp (Aeneas.Std.Result α))] := by
-    have hfailure : Pr[⊥ | residualRng contract cache] = 0 :=
-      probFailure_of_liftM_PMF _
-    apply evalDist_ext
-    intro output
-    rw [probOutput_bind_const, hfailure, tsub_zero, one_mul]
+    exact OracleComp.evalDist_bind_const _ _
+
   calc
     _ = 𝒟[(fun result => Prod.fst <$> result) <$> (do
         let rng ← residualRng contract (∅ : OracleSpec.QueryCache ByteSpec)
@@ -269,10 +269,10 @@ theorem evalDist_lazyExperiment_eq_randomOracle
           client).run' (∅ : OracleSpec.QueryCache ByteSpec)] := by
       simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp_apply,
         StateT.run'_eq]
-      refine evalDist_bind_congr' _ ?_
+      refine evalDist_bind_congr _ _ _ ?_
       intro answerAndCache
-      exact hresidual answerAndCache.2
-        (pure answerAndCache.1 : Aeneas.Std.Result α)
+      simpa only [Function.comp_apply, Aeneas.Std.bind_tc_ok, Aeneas.Std.pure_tc_eq] using hresidual answerAndCache.2
+        (Aeneas.Std.Result.ok answerAndCache.1 : Aeneas.Std.Result α)
 
 /-- Main bridge, conditional on the handwritten Lean RNG contract.
 
@@ -287,8 +287,10 @@ theorem lazy_eq_eager
     (client : OracleComp ByteSpec α) :
     𝒟[lazyExperiment rngInst (contract.states 2) client] =
     𝒟[Aeneas.Std.Result.ok <$> eagerExperiment client] := by
+  let : MeasurableSpace α := ⊤
+  let : DiscreteMeasurableSpace α := ⟨fun _ => trivial⟩
   rw [evalDist_lazyExperiment_eq_randomOracle contract]
-  exact evalDist_map_eq_of_evalDist_eq
+  exact map_distribution_eq
     (OracleComp.evalDist_simulateQ_randomOracle_run'_empty_eq_uniformTable client)
     Aeneas.Std.Result.ok
 

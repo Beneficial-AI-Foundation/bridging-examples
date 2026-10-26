@@ -5,12 +5,12 @@ defaultTargets = ["BridgingExamples"]
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio.git"
-rev = "4bba755c0db64867c61e9a59f70dbe8fb8096ff9"
+rev = "2567392aabfcf1c29a8a7958e4f750829952d83f"
 
 [[require]]
 name = "aeneas"
 git = "https://github.com/AeneasVerif/aeneas.git"
-rev = "5b9dcf33dccdb1560ea7203ac57ea202476b6ed3"
+rev = "da2b22e78d8fd5f076a902a5617c34038409fb79"
 subDir = "backends/lean"
 
 [[lean_lib]]

@@ -56,21 +56,22 @@ theorem commit_refines {H R : Type}
         (fun state => Prod.map byteToModel id <$> rngInst.next_u8 state)
         oracle (byteToModel message) rng := by
   unfold HashModels at hHash
-  cases hdraw : rngInst.next_u8 rng with
+  cases hdraw : rngInst.next_u8 rng using BridgingExamples.resultCases with
   | fail error =>
-      simp [bridge_commitment.commit, commitModel, hdraw]; rfl
+      simp [bridge_commitment.commit, commitModel, hdraw]
   | div =>
-      simp [bridge_commitment.commit, commitModel, hdraw]; rfl
+      simp [bridge_commitment.commit, commitModel, hdraw]
   | ok draw =>
       rcases draw with ⟨salt, rng'⟩
       have hHash' := hHash message salt
-      cases hResult : hashInst.hash hash message salt with
+      cases hResult : hashInst.hash hash message salt using BridgingExamples.resultCases with
       | fail error =>
-          simp [bridge_commitment.commit, commitModel, hdraw, hResult, CMCommit, ← hHash']; rfl
+          simp [bridge_commitment.commit, commitModel, hdraw, hResult, CMCommit, ← hHash']
       | div =>
-          simp [bridge_commitment.commit, commitModel, hdraw, hResult, CMCommit, ← hHash']; rfl
+          simp [bridge_commitment.commit, commitModel, hdraw, hResult, CMCommit, ← hHash']
       | ok commitment =>
-          simp [bridge_commitment.commit, commitModel, hdraw, hResult, CMCommit, ← hHash']; rfl
+          simp [bridge_commitment.commit, commitModel, hdraw, hResult, CMCommit, ← hHash']
+          rfl
 
 theorem verify_refines {H : Type}
     (hashInst : bridge_commitment.ByteHash H)
@@ -88,18 +89,16 @@ theorem verify_refines {H : Type}
           (openingToModel opening).2) := by
   unfold HashModels at hHash
   have hHash' := hHash opening.message opening.salt
-  cases hResult : hashInst.hash hash opening.message opening.salt with
+  cases hResult : hashInst.hash hash opening.message opening.salt using BridgingExamples.resultCases with
   | fail error =>
       simp [bridge_commitment.verify, openingToModel, CMCheck, hResult, ← hHash']
-      rfl
   | div =>
       simp [bridge_commitment.verify, openingToModel, CMCheck, hResult, ← hHash']
-      rfl
   | ok digest =>
       simp [bridge_commitment.verify, openingToModel, CMCheck, hResult, ← hHash']
       change
-        Aeneas.Std.Result.ok (decide (commitment = digest)) =
-          Aeneas.Std.Result.ok (byteToModel commitment == byteToModel digest)
+        decide (commitment = digest) =
+          (byteToModel commitment == byteToModel digest)
       by_cases hEq : commitment = digest
       · subst digest
         simp
@@ -126,28 +125,18 @@ theorem commit_verify_refines {H R : Type}
       Aeneas.Std.Result.ok (accepted, rng')) =
       (fun draw => (true, draw.2)) <$> rngInst.next_u8 rng := by
   unfold HashModels at hHash
-  cases hdraw : rngInst.next_u8 rng with
+  cases hdraw : rngInst.next_u8 rng using BridgingExamples.resultCases with
   | fail error =>
-      simp [bridge_commitment.commit, hdraw]; rfl
+      simp [bridge_commitment.commit, hdraw]
   | div =>
-      simp [bridge_commitment.commit, hdraw]; rfl
+      simp [bridge_commitment.commit, hdraw]
   | ok draw =>
       rcases draw with ⟨salt, rng'⟩
       have hHash' := hHash message salt
-      cases hResult : hashInst.hash hash message salt with
-      | fail error =>
-          rw [hResult] at hHash'
-          change
-            Aeneas.Std.Result.fail error =
-              Aeneas.Std.Result.ok (h (byteToModel message, byteToModel salt)) at hHash'
-          cases hHash'
-      | div =>
-          rw [hResult] at hHash'
-          change
-            Aeneas.Std.Result.div =
-              Aeneas.Std.Result.ok (h (byteToModel message, byteToModel salt)) at hHash'
-          cases hHash'
+      cases hResult : hashInst.hash hash message salt using BridgingExamples.resultCases with
+      | fail error => simp [hResult] at hHash'
+      | div => simp [hResult] at hHash'
       | ok commitment =>
-          simp [bridge_commitment.commit, bridge_commitment.verify, hdraw, hResult]; rfl
+          simp [bridge_commitment.commit, bridge_commitment.verify, hdraw, hResult]
 
 end bridge_commitment.Bridge

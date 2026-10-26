@@ -1,4 +1,5 @@
 import Generated.LazyOracle.Funs
+import BridgingExamples.Result
 import BridgingExamples.LazyOracle.Spec
 import Aeneas.Std.WP
 import VCVio.OracleComp.QueryTracking.CachingOracle
@@ -24,7 +25,7 @@ def byteToModel (value : Aeneas.Std.U8) : Fin 256 :=
 
 def cacheToModel (self : LazyOracle) :
     OracleSpec.QueryCache ByteSpec :=
-  fun key =>
+  .ofFn fun key =>
     (if key then self.true_value else self.false_value).map byteToModel
 
 def stateToModel {R : Type} (state : LazyOracle × R) :
@@ -55,16 +56,17 @@ theorem byteToModel_bijective :
       cases y with
       | mk yb =>
         congr
-        exact (BitVec.toFin_bijective 8).1 hxy
+        exact BitVec.toFin_inj.mp hxy
   · intro y
-    obtain ⟨value, hvalue⟩ := (BitVec.toFin_bijective 8).2 y
-    exact ⟨⟨value⟩, hvalue⟩
+    exact ⟨⟨BitVec.ofFin y⟩, rfl⟩
 
 theorem new_refines :
     cacheToModel <$> LazyOracle.new =
       Aeneas.Std.Result.ok (∅ : OracleSpec.QueryCache ByteSpec) := by
+  simp only [LazyOracle.new, BridgingExamples.resultMapOk]
   apply congrArg Aeneas.Std.Result.ok
-  funext key
+  apply OracleSpec.QueryCache.ext
+  intro key
   cases key <;> rfl
 
 theorem query_refines {R : Type} (rngInst : ByteRng R)
@@ -76,48 +78,44 @@ theorem query_refines {R : Type} (rngInst : ByteRng R)
   cases key <;> simp only [implementation, lazyCacheModel, stateToModel, cacheToModel,
     LazyOracle.query, QueryImpl.withCachingAux_apply]
   · cases falseValue with
-    | some value => rfl
+    | some value => simp [StateT.run, StateT.mk, OracleSpec.QueryCache.ofFn, stateToModel,
+        cacheToModel, Aeneas.Std.pure_tc_eq]
     | none =>
-      cases hdraw : rngInst.next_u8 rngState with
-      | fail error => simp [hdraw]; rfl
-      | div => simp [hdraw]; rfl
+      cases hdraw : rngInst.next_u8 rngState using BridgingExamples.resultCases with
+      | fail error => simp [hdraw]
+      | div => simp [hdraw]
       | ok draw =>
         rcases draw with ⟨value, rngState'⟩
         simp [hdraw]
-        change Aeneas.Std.Result.ok _ = Aeneas.Std.Result.ok _
-        apply congrArg Aeneas.Std.Result.ok
         change
-          (byteToModel value,
-              cacheToModel { false_value := some value, true_value := trueValue },
+          (cacheToModel { false_value := some value, true_value := trueValue },
               rngState') =
-            (byteToModel value,
-              (cacheToModel { false_value := none, true_value := trueValue }).cacheQuery
+            ((cacheToModel { false_value := none, true_value := trueValue }).cacheQuery
                 false (byteToModel value),
               rngState')
-        congr 2
-        funext queryKey
+        congr 1
+        apply OracleSpec.QueryCache.ext
+        intro queryKey
         cases queryKey <;> rfl
   · cases trueValue with
-    | some value => rfl
+    | some value => simp [StateT.run, StateT.mk, OracleSpec.QueryCache.ofFn, stateToModel,
+        cacheToModel, Aeneas.Std.pure_tc_eq]
     | none =>
-      cases hdraw : rngInst.next_u8 rngState with
-      | fail error => simp [hdraw]; rfl
-      | div => simp [hdraw]; rfl
+      cases hdraw : rngInst.next_u8 rngState using BridgingExamples.resultCases with
+      | fail error => simp [hdraw]
+      | div => simp [hdraw]
       | ok draw =>
         rcases draw with ⟨value, rngState'⟩
         simp [hdraw]
-        change Aeneas.Std.Result.ok _ = Aeneas.Std.Result.ok _
-        apply congrArg Aeneas.Std.Result.ok
         change
-          (byteToModel value,
-              cacheToModel { false_value := falseValue, true_value := some value },
+          (cacheToModel { false_value := falseValue, true_value := some value },
               rngState') =
-            (byteToModel value,
-              (cacheToModel { false_value := falseValue, true_value := none }).cacheQuery
+            ((cacheToModel { false_value := falseValue, true_value := none }).cacheQuery
                 true (byteToModel value),
               rngState')
-        congr 2
-        funext queryKey
+        congr 1
+        apply OracleSpec.QueryCache.ext
+        intro queryKey
         cases queryKey <;> rfl
 
 theorem client_refines {R α : Type} (rngInst : ByteRng R)
@@ -145,7 +143,8 @@ theorem initialized_client_refines {R α : Type} (rngInst : ByteRng R)
     change (cacheToModel { false_value := none, true_value := none }, rngState) =
       (∅, rngState)
     congr
-    funext key
+    apply OracleSpec.QueryCache.ext
+    intro key
     cases key <;> rfl
   simpa [LazyOracle.new, hstate] using
     client_refines rngInst client
