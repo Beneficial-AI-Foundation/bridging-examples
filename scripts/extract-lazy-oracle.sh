@@ -3,8 +3,8 @@ set -euo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/env.sh"
 cd "$BRIDGE_ROOT"
 mkdir -p .tools/llbc Generated/LazyOracle
-test "$(aeneas -version)" = 'aeneas nightly-2026.08.27-5b9dcf3'
-test "$(charon version)" = '0.1.245 (4ad295c1bf982b5533ce7d85f4ddc889ff3127f8)'
+test "$(aeneas -version)" = 'aeneas nightly-2026.10.26-da2b22e'
+test "$(charon version)" = '0.1.299 (40ca4ab6c10ecb7629320d6eccc0f41423fbe889)'
 charon cargo --preset aeneas --sysroot default \
   --dest-file "$BRIDGE_ROOT/.tools/llbc/bridge_lazy_oracle.llbc" \
   -- --manifest-path "$BRIDGE_ROOT/rust/lazy-oracle/Cargo.toml"

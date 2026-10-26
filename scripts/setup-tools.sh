@@ -5,21 +5,21 @@ cd "$BRIDGE_ROOT"
 
 # These assets and SHA-256 digests belong to the pinned GitHub release below.
 # Keep the Rust host target aligned with the extraction binaries.
-tag=nightly-2026.08.27-5b9dcf3
+tag=nightly-2026.10.26-da2b22e
 case "$(uname -s)/$(uname -m)" in
   Linux/x86_64)
     asset=aeneas-linux-x86_64.tar.gz
-    digest=bd6e2379969796af6d1784532a7f5a162ec27d01237fdde8570244052f297e94
+    digest=5ee16f90e4e2594351f3db7d248e31d87e6cf1c6918ca9658bfa3664d0f9c1a3
     rust_host=x86_64-unknown-linux-gnu
     ;;
   Linux/aarch64|Linux/arm64)
     asset=aeneas-linux-aarch64.tar.gz
-    digest=f8727c9bf49033bcfdb9e66225c738926e5146277e93828d6a5b00f0fe1df1c3
+    digest=441c7e5c0c26b100e8eb8ef39f4ea8d292446762a0e1a3cb2dc7742cbcafcdcc
     rust_host=aarch64-unknown-linux-gnu
     ;;
   Darwin/arm64|Darwin/aarch64)
     asset=aeneas-macos-aarch64.tar.gz
-    digest=bc7266804f32647831cfc35f76eead73bd251933f9931ca7ccbee186ef0b67ab
+    digest=c118da207514dfb42cedeb36da60c9a34986004bf94a609aec2619da443060f3
     rust_host=aarch64-apple-darwin
     ;;
   *)
@@ -40,8 +40,8 @@ if [[ "$#" -ne 0 ]]; then
   echo 'Usage: bash scripts/setup-tools.sh [--print-platform]' >&2
   exit 1
 fi
-archive="$BRIDGE_ROOT/.tools/downloads/$asset"
-mkdir -p .tools/downloads .tools/aeneas
+archive="$BRIDGE_ROOT/.tools/downloads/$tag/$asset"
+mkdir -p ".tools/downloads/$tag" .tools/aeneas
 if [[ ! -f "$archive" ]]; then
   curl -fLsS --retry 3 \
     "https://github.com/AeneasVerif/aeneas/releases/download/$tag/$asset" \
@@ -62,7 +62,7 @@ print("Extraction archive SHA-256 verified.")
 PYHASH
 tar -xzf "$archive" -C .tools/aeneas
 test "$(aeneas -version)" = "aeneas $tag"
-test "$(charon version)" = '0.1.245 (4ad295c1bf982b5533ce7d85f4ddc889ff3127f8)'
+test "$(charon version)" = '0.1.299 (40ca4ab6c10ecb7629320d6eccc0f41423fbe889)'
 test "$(charon toolchain-version)" = "$RUSTUP_TOOLCHAIN"
 
 if [[ ! -x "$CARGO_HOME/bin/rustup" ]]; then

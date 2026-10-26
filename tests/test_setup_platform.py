@@ -57,7 +57,7 @@ class SetupPlatformTests(unittest.TestCase):
                 self.assertFalse((self.root / ".tools").exists())
 
     def test_corrupt_cached_archive_is_rejected(self):
-        downloads = self.root / ".tools/downloads"
+        downloads = self.root / ".tools/downloads/nightly-2026.10.26-da2b22e"
         downloads.mkdir(parents=True)
         (downloads / "aeneas-linux-x86_64.tar.gz").write_bytes(b"invalid archive")
         result = self.run_setup("Linux", "x86_64")

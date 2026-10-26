@@ -45,9 +45,9 @@ charon_pin = "".join(
     line.strip() for line in (root / ".lake/packages/aeneas/charon-pin").read_text().splitlines()
     if not line.startswith("#")
 )
-require(charon_pin == "4ad295c1bf982b5533ce7d85f4ddc889ff3127f8", "Extraction tools still target the previous backend; validate Lean separately with --lean-only")
-require(output(str(root / ".tools/aeneas/charon"), "version") == f"0.1.245 ({charon_pin})",
+require(charon_pin == "40ca4ab6c10ecb7629320d6eccc0f41423fbe889", "Unexpected Charon pin")
+require(output(str(root / ".tools/aeneas/charon"), "version") == f"0.1.299 ({charon_pin})",
         "Charon binary does not match the Lean backend's pin")
 require(output(str(root / ".tools/aeneas/aeneas"), "-version") ==
-        "aeneas nightly-2026.08.27-5b9dcf3", "Unexpected Aeneas binary")
+        "aeneas nightly-2026.10.26-da2b22e", "Unexpected Aeneas binary")
 print("Lean dependency checkouts and extraction binary pins agree.")
