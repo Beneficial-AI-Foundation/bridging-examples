@@ -1,0 +1,10 @@
+{
+  "crate": "byte_mask",
+  "sha256": {
+    "rust/byte-mask/Cargo.lock": "2d9194821933bb867884e0af05e6aacaf14edaac9dcdedd5a8c9e80ee28d0507",
+    "rust/byte-mask/Cargo.toml": "e8c5ba96ca0d67d510b2b5a9ec14537172f49a355890883e09e12407bcf24431",
+    "rust/byte-mask/src/lib.rs": "0bec7854b7952e410ed5dfaa85d0ea04308b89e30414d93a6fe23bf981da4a73",
+    "Generated/ByteMask/ByteMask.lean": "eeac50f757e01a50b2f927ca10a1ae98b7c03ebb91f3909b11d6411bb448dfe6",
+    "Generated/ByteMask/translation.json": "68ec5d1f77525e9ef419c6dc691dcbeabefdd69e7d34d09c635cafe161b1bea7"
+  }
+}

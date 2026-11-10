@@ -1,0 +1,3 @@
+/* The explorer's colours for Lean rendered by Verso. Verso's own stylesheet comes first. */
+.hl.lean { --verso-code-keyword-color: #77519c; --verso-code-keyword-weight: normal; --verso-code-const-color: #256e93; }
+.line code .doc-comment, .line code .comment { color: #72847e; }

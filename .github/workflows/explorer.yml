@@ -1,0 +1,53 @@
+name: Verify and publish explorer
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: leanprover/lean-action@v1
+      - name: Install pinned extraction and Rust tools
+        run: bash scripts/setup-tools.sh
+      - name: Check all present stages (without extracting Rust-only examples)
+        run: bash scripts/check-explorer.sh
+      - name: Package read-only artifact
+        run: |
+          mkdir -p _site/etm
+          cp browser/index.html browser/manifest.json _site/
+          cp browser/etm/index.html _site/etm/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: explorer-${{ github.sha }}
+          path: _site
+      - uses: actions/upload-pages-artifact@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Beneficial-AI-Foundation/bridging-examples'
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Beneficial-AI-Foundation/bridging-examples'
+    needs: verify
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

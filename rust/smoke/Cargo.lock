@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "bridge_smoke"
+name = "smoke"
 version = "0.1.0"

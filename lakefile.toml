@@ -2,6 +2,13 @@ name = "bridgingExamples"
 version = "0.1.0"
 defaultTargets = ["BridgingExamples"]
 
+# Verso renders the Lean shown in the explorer. It comes first so that the versions of shared
+# dependencies are the ones VCVio and Mathlib pin.
+[[require]]
+name = "verso"
+git = "https://github.com/leanprover/verso.git"
+rev = "01a09f320122475119588526857a07d218aef600"
+
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio.git"

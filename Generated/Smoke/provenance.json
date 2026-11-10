@@ -1,0 +1,11 @@
+{
+  "crate": "smoke",
+  "sha256": {
+    "rust/smoke/Cargo.lock": "94c8a92a1b3208b0bd307738e5406a2cbbefb836c4379f6b3a79a494c8966996",
+    "rust/smoke/Cargo.toml": "8f0936aae48cee5e3fcfe13fb9ff5bf0b87422ba5091da879f0e5c5bcc52a58e",
+    "rust/smoke/src/lib.rs": "0147f6c687ff4be9a7c3bcec2f8eaf359f515d46a1906775e92ddf88fc2c54c4",
+    "Generated/Smoke/Funs.lean": "c2b4e4c30e3988173e0e88f505a18aa78df3506f3b919f95d361ea1e054ee384",
+    "Generated/Smoke/Types.lean": "67e5db177db47e8d428e7951af75f83d851e0b9255be855dc85ae1c7a5694897",
+    "Generated/Smoke/translation.json": "44adb1a21c29649b91ab4f35cf3f3e5ccb097f56295bde45514c6a7295716e0c"
+  }
+}

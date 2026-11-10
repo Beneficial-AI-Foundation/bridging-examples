@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "bridge_commitment"
+name = "commitment"
 version = "0.1.0"

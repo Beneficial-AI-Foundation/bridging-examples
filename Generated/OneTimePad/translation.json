@@ -1,0 +1,118 @@
+{
+  "aeneas_version": "nightly-2026.10.26-da2b22e",
+  "charon_version": "0.1.299",
+  "crate": "one_time_pad",
+  "functions": [
+    {
+      "def_id": 19,
+      "lean_name": "one_time_pad.sample_key",
+      "lean_file": "OneTimePad.lean",
+      "rust_name": "one_time_pad::sample_key",
+      "is_local": true,
+      "source": { "file": "src/lib.rs", "begin_line": 9, "end_line": 13 },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 20,
+      "lean_name": "one_time_pad.keygen",
+      "lean_file": "OneTimePad.lean",
+      "rust_name": "one_time_pad::keygen",
+      "is_local": true,
+      "source": { "file": "src/lib.rs", "begin_line": 15, "end_line": 17 },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 21,
+      "lean_name": "one_time_pad.encrypt_loop.body",
+      "lean_file": "OneTimePad.lean",
+      "rust_name": "one_time_pad::encrypt",
+      "is_local": true,
+      "source": { "file": "src/lib.rs", "begin_line": 22, "end_line": 25 },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "one_time_pad.encrypt"
+    },
+    {
+      "def_id": 21,
+      "lean_name": "one_time_pad.encrypt_loop",
+      "lean_file": "OneTimePad.lean",
+      "rust_name": "one_time_pad::encrypt",
+      "is_local": true,
+      "source": { "file": "src/lib.rs", "begin_line": 22, "end_line": 25 },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "one_time_pad.encrypt"
+    },
+    {
+      "def_id": 21,
+      "lean_name": "one_time_pad.encrypt",
+      "lean_file": "OneTimePad.lean",
+      "rust_name": "one_time_pad::encrypt",
+      "is_local": true,
+      "source": { "file": "src/lib.rs", "begin_line": 19, "end_line": 27 },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 22,
+      "lean_name": "one_time_pad.decrypt",
+      "lean_file": "OneTimePad.lean",
+      "rust_name": "one_time_pad::decrypt",
+      "is_local": true,
+      "source": { "file": "src/lib.rs", "begin_line": 29, "end_line": 31 },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    }
+  ],
+  "types": [],
+  "globals": [],
+  "trait_decls": [
+    {
+      "def_id": 7,
+      "lean_name": "one_time_pad.rand_core.RngCore",
+      "lean_file": "OneTimePad.lean",
+      "rust_name": "rand_core::RngCore",
+      "is_local": false,
+      "source": {
+        "file": "/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.9.5/src/lib.rs",
+        "begin_line": 130,
+        "end_line": 130
+      }
+    },
+    {
+      "def_id": 5,
+      "lean_name": "one_time_pad.rand_core.CryptoRng",
+      "lean_file": "OneTimePad.lean",
+      "rust_name": "rand_core::CryptoRng",
+      "is_local": false,
+      "source": {
+        "file": "/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.9.5/src/lib.rs",
+        "begin_line": 204,
+        "end_line": 204
+      }
+    }
+  ],
+  "trait_impls": []
+}

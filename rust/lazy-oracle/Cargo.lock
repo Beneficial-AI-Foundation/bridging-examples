@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "bridge_lazy_oracle"
+name = "lazy_oracle"
 version = "0.1.0"

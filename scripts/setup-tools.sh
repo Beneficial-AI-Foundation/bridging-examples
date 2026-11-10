@@ -76,4 +76,8 @@ fi
 rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal \
   --component rustc-dev --component rust-src
 
+for manifest in rust/*/Cargo.toml; do
+  cargo fetch --locked --manifest-path "$manifest"
+done
+
 echo 'Pinned extraction tools ready. Lean is selected by lean-toolchain.'
