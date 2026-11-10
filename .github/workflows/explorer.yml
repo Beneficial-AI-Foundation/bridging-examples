@@ -2,8 +2,7 @@ name: Verify and publish explorer
 on:
   pull_request:
   push:
-    # bridge-artifact also deploys until it is merged; remove it then.
-    branches: [main, bridge-artifact]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -34,12 +33,12 @@ jobs:
           name: explorer-${{ github.sha }}
           path: _site
       - uses: actions/upload-pages-artifact@v4
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/bridge-artifact') && github.repository == 'Beneficial-AI-Foundation/bridging-examples'
+        if: (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && github.repository == 'Beneficial-AI-Foundation/bridging-examples'
         with:
           path: _site
 
   deploy:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/bridge-artifact') && github.repository == 'Beneficial-AI-Foundation/bridging-examples'
+    if: (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && github.repository == 'Beneficial-AI-Foundation/bridging-examples'
     needs: verify
     runs-on: ubuntu-24.04
     permissions:
