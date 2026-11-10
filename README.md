@@ -1,16 +1,16 @@
 # Bridging Rust implementations to Lean specifications
 
-Small examples that connect Rust code to cryptographic specifications in Lean 4, using
+Examples that connect Rust code to cryptographic specifications in Lean 4, using
 [Aeneas](https://github.com/AeneasVerif/aeneas) and
 [VCVio](https://github.com/Verified-zkEVM/VCVio).
 
-| Model | Where | What it contains |
-|---|---|---|
-| Rust | `rust/<example>/` | the implementation |
-| Aeneas | `Generated/<Example>/` | the Lean code that Aeneas generates from it |
-| Spec | `BridgingExamples/<Example>/Spec.lean` | properties of generated functions |
-| Crypto | `BridgingExamples/<Example>/Crypto.lean` | cryptographic counterparts, specified in VCVio |
-| Bridge | `BridgingExamples/<Example>/Bridge.lean` | distributional equivalence of Aeneas and Crypto models |
+Each example is a folder `BridgingExamples/<Example>/`:
+
+- **Rust**, in `rust/`: the implementation.
+- **Aeneas**, in `Aeneas.lean`: the Lean code that Aeneas generates from it.
+- **Spec**, in `Spec.lean`: properties of generated functions.
+- **Crypto**, in `Crypto.lean`: cryptographic counterparts, specified in VCVio.
+- **Bridge**, in `Bridge.lean`: distributional equivalence of Aeneas and Crypto models.
 
 See the examples in the
 [explorer](https://beneficial-ai-foundation.github.io/bridging-examples/). This revision contains

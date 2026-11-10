@@ -1,0 +1,10 @@
+{
+  "crate": "commitment",
+  "sha256": {
+    "BridgingExamples/Commitment/rust/Cargo.lock": "40d6b2a1db575ae105d4de310fbc88573c05bc13bb6415ceba90a884233eb8d2",
+    "BridgingExamples/Commitment/rust/Cargo.toml": "5093ba52d64e519866e98dc51576fe48fa7bc3ebcea80b33ddbdcd0ea36b3b59",
+    "BridgingExamples/Commitment/rust/src/lib.rs": "7dcd24c68995a9c85c1303108666d463ff7cdb50cb0b98b403e1bfbf5d7ec64e",
+    "BridgingExamples/Commitment/Aeneas.lean": "4f535588733ec29808b1ec846d435134b2804f67280747f9be48001a95048a06",
+    "BridgingExamples/Commitment/translation.json": "f92244d6f70ca142d289261c31aeefabfbedef01b5b2d2e875dd26b302eeeffc"
+  }
+}

@@ -22,12 +22,11 @@ jobs:
       - name: Install pinned extraction and Rust tools
         run: bash scripts/setup-tools.sh
       - name: Check all present stages (without extracting Rust-only examples)
-        run: bash scripts/check-explorer.sh
+        run: bash scripts/check.sh
       - name: Package read-only artifact
         run: |
-          mkdir -p _site/etm
-          cp browser/index.html browser/manifest.json _site/
-          cp browser/etm/index.html _site/etm/
+          mkdir -p _site
+          cp -R explorer/site/. _site/
       - uses: actions/upload-artifact@v4
         with:
           name: explorer-${{ github.sha }}

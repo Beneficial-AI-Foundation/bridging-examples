@@ -1,0 +1,10 @@
+{
+  "crate": "prob_smoke",
+  "sha256": {
+    "BridgingExamples/ProbSmoke/rust/Cargo.lock": "61602ae7c1f3e41e7bca4aee48bd1c1e28a06100c6832e0507bdbe61a9b741ce",
+    "BridgingExamples/ProbSmoke/rust/Cargo.toml": "d5f9012ac160c51899003c3e442213a42ed60d65e88c3044bb862fb1cfe2576f",
+    "BridgingExamples/ProbSmoke/rust/src/lib.rs": "da058a037bacf0d7dbc18464d75503b165c7f5cbf34dadaa98984019ddf7165f",
+    "BridgingExamples/ProbSmoke/Aeneas.lean": "30ba63f113bc80e467a4add4166cff695e81a1f6196a61b70bc359d9fbb27df7",
+    "BridgingExamples/ProbSmoke/translation.json": "3a4c7f0b06bae7bd2cfcb10fcaeb0fa07dcdfd771006043b110f7b0d2c417951"
+  }
+}

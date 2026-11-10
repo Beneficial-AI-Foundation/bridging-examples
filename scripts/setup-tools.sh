@@ -76,7 +76,7 @@ fi
 rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal \
   --component rustc-dev --component rust-src
 
-for manifest in rust/*/Cargo.toml; do
+for manifest in BridgingExamples/*/rust/Cargo.toml; do
   cargo fetch --locked --manifest-path "$manifest"
 done
 
