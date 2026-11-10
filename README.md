@@ -4,16 +4,7 @@ Small examples that connect Rust code to cryptographic specifications in Lean 4,
 [Aeneas](https://github.com/AeneasVerif/aeneas) and
 [VCVio](https://github.com/Verified-zkEVM/VCVio).
 
-```mermaid
-flowchart LR
-    R["Rust<br/>fn f"] -->|"Charon + Aeneas"| A["Aeneas<br/>def f : Result"]
-    A --> S["Spec<br/>theorem f_spec"]
-    S --> B["Bridge<br/>theorem f_bridge"]
-    B --> A
-    B --> C["Crypto<br/>def f : ProbComp"]
-```
-
-| Stage | Where | What it contains |
+| Model | Where | What it contains |
 |---|---|---|
 | Rust | `rust/<example>/` | the implementation |
 | Aeneas | `Generated/<Example>/` | the Lean code that Aeneas generates from it |
