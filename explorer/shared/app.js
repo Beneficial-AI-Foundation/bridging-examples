@@ -163,7 +163,7 @@ function render(preserveScroll = false) {
   $('#item-title').textContent=item?.name ?? data.name;
   $('#focus-declaration').disabled=!item;
   $('#item-summary').textContent=data.name;
-  $('#check-status').textContent=data.coverage?`Spec ${data.coverage.spec}/${data.coverage.atoms} · Crypto ${data.coverage.crypto}/${data.coverage.atoms} · Bridge ${data.coverage.bridge}/${data.coverage.atoms}`:'Not extracted';
+  $('#check-status').textContent=data.coverage?`Spec ${data.coverage.spec}/${data.coverage.functions} · Crypto ${data.coverage.crypto}/${data.coverage.atoms} · Bridge ${data.coverage.bridge}/${data.coverage.atoms}`:'Not extracted';
   $('#focus-declaration').setAttribute('aria-pressed',state.mode==='declaration');
   $('#focus-declaration').title=state.mode==='files'?'Focus selected declaration':'Show full files';
   $('#focus-declaration').setAttribute('aria-label',$('#focus-declaration').title);

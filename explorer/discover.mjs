@@ -198,9 +198,12 @@ export function discover(base = root, configs = examples(base)) {
     linkAtoms(example, declarations);
     const assumed = i => i.assumptions.length || (i.trait && i.hypotheses.length);
     example.items = example.items.filter(i => !i.external || i.spec.length || i.crypto.length || i.bridge.length || assumed(i));
+    // Only functions need a spec; types and traits count in neither number.
+    const functions = example.items.filter(i => i.category === 'functions');
     if (example.extraction === 'available') example.coverage = {
       atoms: example.items.length,
-      spec: example.items.filter(i => i.spec.length || assumed(i) || i.category !== 'functions').length,
+      functions: functions.length,
+      spec: functions.filter(i => i.spec.length || assumed(i)).length,
       crypto: example.items.filter(i => i.crypto.length || assumed(i)).length,
       bridge: example.items.filter(i => i.bridge.length || assumed(i)).length,
       checkedBridge: example.items.filter(i => i.bridge.some(n => example.declarations.some(d => d.name === n && isCheckedTheorem(d)))).length,

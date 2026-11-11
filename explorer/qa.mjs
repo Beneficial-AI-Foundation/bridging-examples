@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.ETM_PLAYWRIGHT_MODULE || 'playwright');
-const data = JSON.parse(readFileSync(new URL('manifest.json', import.meta.url)));
+const data = JSON.parse(readFileSync(new URL('site/manifest.json', import.meta.url)));
+const stages = ['rust', 'aeneas', 'spec', 'crypto', 'bridge'];
 const output = new URL('../.tools/explorer-qa/', import.meta.url);
 mkdirSync(output, { recursive: true });
 const browser = await chromium.launch({ headless: true });
@@ -16,12 +17,14 @@ try {
     const errors = [], remote = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => { if (/^https?:/.test(request.url())) remote.push(request.url()); });
-    await page.goto(new URL('site/index.html', import.meta.url).href);
+    // Only Rust is expanded by default; the checks below read every pane.
+    const site = new URL('site/index.html', import.meta.url);
+    site.hash = `example=${data.examples[0].id}&${stages.map(stage => `${stage}=1`).join('&')}`;
+    await page.goto(site.href);
     assert.equal(await page.locator('#focus-declaration').getAttribute('aria-pressed'), 'false');
     for (const example of data.examples) {
       await page.locator('#example-picker').selectOption(example.id);
-      assert.equal(await page.locator('.pane').count(), 4);
-      for (const stage of ['bridge']) await page.locator(`[data-toggle="${stage}"]`).click();
+      assert.equal(await page.locator('.pane').count(), stages.length);
       if (example.extraction === 'missing') {
         assert.match(await page.locator('#pane-body-aeneas').innerText(), /Not extracted/);
         assert.match(await page.locator('#pane-body-crypto').innerText(), /Coverage unknown/);
@@ -36,13 +39,11 @@ try {
       }
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       await page.screenshot({ path: fileURLToPath(new URL(`${example.id}-${width}.png`, output)), fullPage: true });
-      for (const stage of ['bridge']) await page.locator(`[data-toggle="${stage}"]`).click();
     }
-    await page.locator('#example-picker').selectOption('modular-masking');
-    for (const stage of ['bridge']) await page.locator(`[data-toggle="${stage}"]`).click();
-    const masking = data.examples.find(e => e.id === 'modular-masking');
+    await page.locator('#example-picker').selectOption('ModularMasking');
+    const masking = data.examples.find(e => e.id === 'ModularMasking');
     const mask = masking.items.find(i => i.id === 'field_mask');
-    for (const stage of ['rust', 'aeneas', 'crypto', 'bridge']) {
+    for (const stage of stages) {
       await page.locator('#item-picker').selectOption('random_mask');
       const entry = stage === 'rust' || stage === 'aeneas' ? mask[stage]
         : masking.declarations.find(d => d.name === mask[stage][0]);
@@ -56,14 +57,15 @@ try {
       assert.equal(new URL(await page.url()).hash.includes('item=field_mask'), true);
       assert.deepEqual(await page.locator(`#pane-body-${stage}`).evaluate(el =>
         ({ top: el.scrollTop, left: el.scrollLeft })), scroll);
-      for (const other of ['rust', 'aeneas', 'crypto', 'bridge']) {
+      for (const other of stages) {
         if (Array.isArray(mask[other]) && !mask[other].length) continue;
         assert(await page.locator(`#pane-body-${other} .focused`).count() > 0);
       }
     }
-    for (const stage of ['bridge']) await page.locator(`[data-toggle="${stage}"]`).click();
     if (width > 760) {
-      await page.locator('#example-picker').selectOption('commitment');
+      await page.locator('#example-picker').selectOption('Commitment');
+      // Five panes can all be at their minimum width, so the resize uses Rust and Aeneas alone.
+      for (const stage of ['spec', 'crypto', 'bridge']) await page.locator(`[data-toggle="${stage}"]`).click();
       const separator = page.locator('[data-resize="rust"]');
       const before = await page.locator('.pane.rust').boundingBox();
       const handle = await separator.boundingBox();

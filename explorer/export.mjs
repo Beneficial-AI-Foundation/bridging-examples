@@ -32,13 +32,18 @@ writeFileSync(resolve(root, '.lake/explorer/declarations.json'), JSON.stringify(
 for (const [p, digest] of Object.entries(sha256)) {
   assert.equal(createHash('sha256').update(read(p)).digest('hex'), digest, `Source changed during checking: ${p}; rerun export`);
 }
-let repository = execFileSync('git', ['remote', 'get-url', 'origin'], { cwd: root, encoding: 'utf8' }).trim()
-  .replace(/^git@github.com:/, 'https://github.com/').replace(/\.git$/, '');
-if (!repository.startsWith('https://github.com/')) repository = null;
+// Source links need a GitHub remote and a revision; without them the explorer omits the links.
+const git = (...args) => {
+  try { return execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); }
+  catch { return null; }
+};
+let repository = git('remote', 'get-url', 'origin')?.replace(/^git@github.com:/, 'https://github.com/').replace(/\.git$/, '');
+if (!repository?.startsWith('https://github.com/')) repository = null;
+const status = git('status', '--porcelain');
 writeFileSync(resolve(root, '.lake/explorer/check.json'), JSON.stringify({ sha256,
   opaqueFunctions: [...opaqueFunctions].sort(),
   assumptions: declarations.filter(isAssumption).map(d => d.name).sort(),
   repository,
-  revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
-  dirty: execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim().length > 0,
+  revision: git('rev-parse', 'HEAD'),
+  dirty: status === null ? null : status.length > 0,
 }, null, 2) + '\n');

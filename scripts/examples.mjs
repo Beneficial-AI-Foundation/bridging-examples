@@ -25,6 +25,6 @@ export function examples(base = root) {
       return { id: e.name, crate: pkg.name.replaceAll('-', '_'),
         name: explorer?.name, itemAliases: explorer?.['item-aliases'],
         dir, rust: `${dir}/rust`, aeneas: `${dir}/Aeneas.lean`, module: `BridgingExamples.${e.name}.Aeneas`,
-        translation: `${dir}/translation.json`, provenance: `${dir}/provenance.json`, targets: pkg.targets };
+        translation: `${dir}/translation.json`, provenance: `${dir}/provenance.json` };
     }).sort((a, b) => rank(a.id) - rank(b.id) || a.id.localeCompare(b.id));
 }

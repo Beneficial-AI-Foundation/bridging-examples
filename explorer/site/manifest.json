@@ -11,22 +11,6 @@
       "module": "BridgingExamples.Smoke.Aeneas",
       "translation": "BridgingExamples/Smoke/translation.json",
       "provenance": "BridgingExamples/Smoke/provenance.json",
-      "targets": [
-        {
-          "kind": [
-            "lib"
-          ],
-          "crate_types": [
-            "lib"
-          ],
-          "name": "smoke",
-          "src_path": "/Users/sergiu.bursuc/baif/Protocol Verification/bridges/bridging-examples-a/BridgingExamples/Smoke/rust/src/lib.rs",
-          "edition": "2021",
-          "doc": true,
-          "doctest": true,
-          "test": true
-        }
-      ],
       "files": {
         "BridgingExamples/Smoke/rust/src/lib.rs": {
           "path": "BridgingExamples/Smoke/rust/src/lib.rs",
@@ -210,12 +194,13 @@
       "extraction": "available",
       "coverage": {
         "atoms": 1,
+        "functions": 1,
         "spec": 1,
         "crypto": 1,
         "bridge": 1,
         "checkedBridge": 1
       },
-      "revision": "5615cdd67e21830001baa4c89d9da8887abfb0e6",
+      "revision": "8fdf46b043ae7e6da982c39f7142c335869b0054",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "Byte identity for an extraction smoke test.",
@@ -235,22 +220,6 @@
       "module": "BridgingExamples.ProbSmoke.Aeneas",
       "translation": "BridgingExamples/ProbSmoke/translation.json",
       "provenance": "BridgingExamples/ProbSmoke/provenance.json",
-      "targets": [
-        {
-          "kind": [
-            "lib"
-          ],
-          "crate_types": [
-            "lib"
-          ],
-          "name": "prob_smoke",
-          "src_path": "/Users/sergiu.bursuc/baif/Protocol Verification/bridges/bridging-examples-a/BridgingExamples/ProbSmoke/rust/src/lib.rs",
-          "edition": "2021",
-          "doc": true,
-          "doctest": true,
-          "test": true
-        }
-      ],
       "files": {
         "BridgingExamples/ProbSmoke/rust/src/lib.rs": {
           "path": "BridgingExamples/ProbSmoke/rust/src/lib.rs",
@@ -299,12 +268,13 @@
       "extraction": "available",
       "coverage": {
         "atoms": 1,
+        "functions": 1,
         "spec": 0,
         "crypto": 0,
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "5615cdd67e21830001baa4c89d9da8887abfb0e6",
+      "revision": "8fdf46b043ae7e6da982c39f7142c335869b0054",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "Fill a buffer from an external random number generator.",
@@ -329,22 +299,6 @@
       "module": "BridgingExamples.ByteMask.Aeneas",
       "translation": "BridgingExamples/ByteMask/translation.json",
       "provenance": "BridgingExamples/ByteMask/provenance.json",
-      "targets": [
-        {
-          "kind": [
-            "lib"
-          ],
-          "crate_types": [
-            "lib"
-          ],
-          "name": "byte_mask",
-          "src_path": "/Users/sergiu.bursuc/baif/Protocol Verification/bridges/bridging-examples-a/BridgingExamples/ByteMask/rust/src/lib.rs",
-          "edition": "2021",
-          "doc": true,
-          "doctest": true,
-          "test": true
-        }
-      ],
       "files": {
         "BridgingExamples/ByteMask/rust/src/lib.rs": {
           "path": "BridgingExamples/ByteMask/rust/src/lib.rs",
@@ -417,12 +371,13 @@
       "extraction": "available",
       "coverage": {
         "atoms": 2,
+        "functions": 2,
         "spec": 0,
         "crypto": 0,
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "5615cdd67e21830001baa4c89d9da8887abfb0e6",
+      "revision": "8fdf46b043ae7e6da982c39f7142c335869b0054",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "One-byte masking: a fresh random pad, combined with the value by XOR.",
@@ -447,22 +402,6 @@
       "module": "BridgingExamples.Commitment.Aeneas",
       "translation": "BridgingExamples/Commitment/translation.json",
       "provenance": "BridgingExamples/Commitment/provenance.json",
-      "targets": [
-        {
-          "kind": [
-            "lib"
-          ],
-          "crate_types": [
-            "lib"
-          ],
-          "name": "commitment",
-          "src_path": "/Users/sergiu.bursuc/baif/Protocol Verification/bridges/bridging-examples-a/BridgingExamples/Commitment/rust/src/lib.rs",
-          "edition": "2021",
-          "doc": true,
-          "doctest": true,
-          "test": true
-        }
-      ],
       "files": {
         "BridgingExamples/Commitment/rust/src/lib.rs": {
           "path": "BridgingExamples/Commitment/rust/src/lib.rs",
@@ -656,12 +595,13 @@
       "extraction": "available",
       "coverage": {
         "atoms": 7,
-        "spec": 5,
+        "functions": 2,
+        "spec": 0,
         "crypto": 0,
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "5615cdd67e21830001baa4c89d9da8887abfb0e6",
+      "revision": "8fdf46b043ae7e6da982c39f7142c335869b0054",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "Educational byte-sized salted-hash commitment.",
@@ -681,22 +621,6 @@
       "module": "BridgingExamples.ModularMasking.Aeneas",
       "translation": "BridgingExamples/ModularMasking/translation.json",
       "provenance": "BridgingExamples/ModularMasking/provenance.json",
-      "targets": [
-        {
-          "kind": [
-            "lib"
-          ],
-          "crate_types": [
-            "lib"
-          ],
-          "name": "modular_masking",
-          "src_path": "/Users/sergiu.bursuc/baif/Protocol Verification/bridges/bridging-examples-a/BridgingExamples/ModularMasking/rust/src/lib.rs",
-          "edition": "2021",
-          "doc": true,
-          "doctest": true,
-          "test": true
-        }
-      ],
       "files": {
         "BridgingExamples/ModularMasking/rust/src/lib.rs": {
           "path": "BridgingExamples/ModularMasking/rust/src/lib.rs",
@@ -817,12 +741,13 @@
       "extraction": "available",
       "coverage": {
         "atoms": 4,
+        "functions": 4,
         "spec": 0,
         "crypto": 0,
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "5615cdd67e21830001baa4c89d9da8887abfb0e6",
+      "revision": "8fdf46b043ae7e6da982c39f7142c335869b0054",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "Sampling and additive masking modulo q.",
@@ -850,22 +775,6 @@
       "module": "BridgingExamples.EtM.Aeneas",
       "translation": "BridgingExamples/EtM/translation.json",
       "provenance": "BridgingExamples/EtM/provenance.json",
-      "targets": [
-        {
-          "kind": [
-            "lib"
-          ],
-          "crate_types": [
-            "lib"
-          ],
-          "name": "etm_intro",
-          "src_path": "/Users/sergiu.bursuc/baif/Protocol Verification/bridges/bridging-examples-a/BridgingExamples/EtM/rust/src/lib.rs",
-          "edition": "2021",
-          "doc": true,
-          "doctest": true,
-          "test": true
-        }
-      ],
       "files": {
         "BridgingExamples/EtM/rust/src/lib.rs": {
           "path": "BridgingExamples/EtM/rust/src/lib.rs",
@@ -1256,12 +1165,13 @@
       "extraction": "available",
       "coverage": {
         "atoms": 15,
-        "spec": 12,
+        "functions": 3,
+        "spec": 0,
         "crypto": 0,
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "5615cdd67e21830001baa4c89d9da8887abfb0e6",
+      "revision": "8fdf46b043ae7e6da982c39f7142c335869b0054",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "Encrypt then Mac with sampled nonces.",
@@ -1281,22 +1191,6 @@
       "module": "BridgingExamples.OneTimePad.Aeneas",
       "translation": "BridgingExamples/OneTimePad/translation.json",
       "provenance": "BridgingExamples/OneTimePad/provenance.json",
-      "targets": [
-        {
-          "kind": [
-            "lib"
-          ],
-          "crate_types": [
-            "lib"
-          ],
-          "name": "one_time_pad",
-          "src_path": "/Users/sergiu.bursuc/baif/Protocol Verification/bridges/bridging-examples-a/BridgingExamples/OneTimePad/rust/src/lib.rs",
-          "edition": "2021",
-          "doc": true,
-          "doctest": true,
-          "test": true
-        }
-      ],
       "files": {
         "BridgingExamples/OneTimePad/rust/src/lib.rs": {
           "path": "BridgingExamples/OneTimePad/rust/src/lib.rs",
@@ -1465,12 +1359,13 @@
       "extraction": "available",
       "coverage": {
         "atoms": 6,
+        "functions": 6,
         "spec": 0,
         "crypto": 0,
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "5615cdd67e21830001baa4c89d9da8887abfb0e6",
+      "revision": "8fdf46b043ae7e6da982c39f7142c335869b0054",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "One-time pad encryption of 16-byte blocks.",
@@ -1499,22 +1394,6 @@
       "module": "BridgingExamples.LazyOracle.Aeneas",
       "translation": "BridgingExamples/LazyOracle/translation.json",
       "provenance": "BridgingExamples/LazyOracle/provenance.json",
-      "targets": [
-        {
-          "kind": [
-            "lib"
-          ],
-          "crate_types": [
-            "lib"
-          ],
-          "name": "lazy_oracle",
-          "src_path": "/Users/sergiu.bursuc/baif/Protocol Verification/bridges/bridging-examples-a/BridgingExamples/LazyOracle/rust/src/lib.rs",
-          "edition": "2021",
-          "doc": true,
-          "doctest": true,
-          "test": true
-        }
-      ],
       "files": {
         "BridgingExamples/LazyOracle/rust/src/lib.rs": {
           "path": "BridgingExamples/LazyOracle/rust/src/lib.rs",
@@ -1753,12 +1632,13 @@
       "extraction": "available",
       "coverage": {
         "atoms": 9,
-        "spec": 5,
+        "functions": 4,
+        "spec": 0,
         "crypto": 0,
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "5615cdd67e21830001baa4c89d9da8887abfb0e6",
+      "revision": "8fdf46b043ae7e6da982c39f7142c335869b0054",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "A finite lazy oracle with a generic mutable RNG interface.",

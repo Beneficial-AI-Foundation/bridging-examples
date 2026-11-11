@@ -1,8 +1,8 @@
 // Render the Lean files shown in the explorer with Verso. SubVerso exports each module (tokens,
 // hovers, proof states), Verso turns the export into HTML, and the HTML is cut into source lines.
 // The result is cached in .lake/explorer/verso/<Module>.json. A file is rendered again when it,
-// a project file it imports, the renderer, or the pinned Verso changes. Run it after
-// explorer/export.mjs, which builds the modules.
+// a project file it imports, the renderer, the Lean toolchain, or a pinned dependency changes.
+// Run it after explorer/export.mjs, which builds the modules.
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, renameSync, existsSync, rmSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
@@ -14,7 +14,8 @@ const hash = text => createHash('sha256').update(text).digest('hex');
 const out = resolve(root, '.lake/explorer/verso');
 const pinned = JSON.parse(read('lake-manifest.json')).packages.find(p => p.name === 'verso');
 if (!pinned) { console.log('Verso is not a dependency; the explorer keeps its plain rendering.'); process.exit(0); }
-const version = hash(read('explorer/verso/lines.mjs') + read('explorer/verso/Render.lean') + pinned.rev);
+const version = hash(read('explorer/verso/lines.mjs') + read('explorer/verso/Render.lean') +
+  read('lean-toolchain') + read('lake-manifest.json'));
 
 const moduleOf = path => path.slice(0, -'.lean'.length).replaceAll('/', '.');
 const cacheOf = path => resolve(out, `${moduleOf(path)}.json`);

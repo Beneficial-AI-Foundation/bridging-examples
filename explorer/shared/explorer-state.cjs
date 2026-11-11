@@ -24,8 +24,13 @@ const Explorer = {
       (['spec', 'bridge'].includes(stage) && item.assumptions?.includes(d.name)) ||
       d.links?.some(link => link.targets.includes(item.leanName))));
     if (owners.length === 1) return owners[0];
-    const matches = example.items.filter(i => this.entries(example, i, stage)
-      .some(r => r.file === file && r.start <= line && line <= (r.end || Infinity)));
+    // A trait method lies inside its trait: the atom with the smallest range containing the line
+    // owns it, and atoms with equally small ranges remain ambiguous.
+    const sizes = example.items.map(i => this.entries(example, i, stage)
+      .filter(r => r.file === file && r.start <= line && line <= (r.end || Infinity))
+      .map(r => (r.end || Infinity) - r.start));
+    const smallest = Math.min(...sizes.flat());
+    const matches = example.items.filter((_, index) => sizes[index].includes(smallest));
     return matches.length === 1 ? matches[0] : null;
   },
   selection(example, id, support, origin) {

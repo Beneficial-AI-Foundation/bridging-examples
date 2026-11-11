@@ -21,7 +21,7 @@ jobs:
       - uses: leanprover/lean-action@v1
       - name: Install pinned extraction and Rust tools
         run: bash scripts/setup-tools.sh
-      - name: Check all present stages (without extracting Rust-only examples)
+      - name: Check the extractions and all present stages
         run: bash scripts/check.sh
       - name: Package read-only artifact
         run: |
