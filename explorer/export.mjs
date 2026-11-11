@@ -1,3 +1,6 @@
+// Build every Lean module and write .lake/explorer/declarations.json (from #export_explorer and
+// #export_proof_ranges) and check.json (source hashes, opaque functions, assumptions, revision).
+// Fails on any axiom other than Lean's foundational axioms and Aeneas's opaque functions.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
@@ -11,10 +14,12 @@ const sources = ['BridgingExamples', 'Common'].flatMap(dir => walk(resolve(root,
 const modules = sources.map(p => p.slice(0, -5).replaceAll('/', '.'));
 const translationFiles = walk(resolve(root, 'BridgingExamples')).filter(p => p.endsWith('/translation.json'))
   .map(p => relative(root, p));
+// Hashed before the build and compared after it.
 const tracked = [...sources, ...translationFiles, 'lean-toolchain', 'lakefile.toml', 'lake-manifest.json'];
 const sha256 = Object.fromEntries(tracked.map(p => [p, createHash('sha256').update(read(p)).digest('hex')]));
 execFileSync('lake', ['build', ...modules], { cwd: root, stdio: 'inherit' });
 mkdirSync(resolve(root, '.lake/explorer'), { recursive: true });
+// Imports every module and runs both export commands.
 const driver = [...modules.map(m => `import ${m}`),
   'set_option maxHeartbeats 0',
   '#export_explorer ".lake/explorer/declarations.json"',

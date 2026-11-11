@@ -1,4 +1,6 @@
 // Optional visual QA. Run only in an environment with permitted browser access.
+// Checks selection, focus and resizing of explorer/site/index.html at three widths in Playwright
+// (ETM_PLAYWRIGHT_MODULE locates it); screenshots go to .tools/explorer-qa/.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdirSync, readFileSync } from 'node:fs';

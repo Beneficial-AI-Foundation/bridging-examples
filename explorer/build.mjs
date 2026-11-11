@@ -1,3 +1,5 @@
+// Write the explorer page and its manifest to explorer/site/, or with --check compare the page.
+// Run after explorer/export.mjs and explorer/verso.mjs.
 import assert from 'node:assert/strict';
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -6,6 +8,7 @@ import { discover } from './discover.mjs';
 import { read, root } from '../scripts/examples.mjs';
 import { renderHtml } from './render.mjs';
 
+/** The page data: the examples, the Lean toolchain and the VCVio references. */
 export function buildData() {
   const vcvio = JSON.parse(read('lake-manifest.json')).packages.find(p => p.name === 'VCVio');
   return { defaultExample: null, examples: discover(), lean: read('lean-toolchain').trim(),
@@ -50,6 +53,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   else {
     mkdirSync(new URL('site/etm/', import.meta.url), { recursive: true });
     writeFileSync(new URL('site/index.html', import.meta.url), html);
+    // The same page, opening on Encrypt then Mac.
     writeFileSync(new URL('site/etm/index.html', import.meta.url), renderHtml({ ...data, defaultExample: 'EtM' }, verso));
     writeFileSync(new URL('site/manifest.json', import.meta.url), JSON.stringify(data, null, 2) + '\n');
   }

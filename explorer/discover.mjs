@@ -1,3 +1,5 @@
+// The explorer data of each example: its files by panel, its atoms, and the declarations linked to
+// each atom. Every file must match its recorded hash.
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, relative, basename } from 'node:path';
@@ -8,6 +10,9 @@ import { opaqueFunctionNames, auditDeclarations, declarationEvidence, isCheckedT
 export const hash = text => createHash('sha256').update(text).digest('hex');
 export const stages = ['rust', 'aeneas', 'spec', 'crypto', 'bridge'];
 
+/** The names, most specific first, under which a counterpart of `atom` may be declared. A
+ * method `m` of a trait implementation `Owner.Insts.Trait` also matches `Owner.m`, and `m`
+ * beside `Owner`. */
 function counterpartSuffixes(atom, crate) {
   const exact = atom.leanName.slice(crate.length + 1);
   if (!atom.implementation) return [exact];
@@ -20,6 +25,10 @@ function counterpartSuffixes(atom, crate) {
   return [...new Set([exact, `${owner}.${method}`, [...scope, method].join('.')])];
 }
 
+/** Links each atom `f` to its specs, Crypto counterpart, bridge theorems and assumptions, by
+ * attribute or by name (`crate.Spec.f_spec`, `crate.Crypto.f`, `crate.Bridge.f_bridge`,
+ * `crate.Spec.f_assumption`, `crate.Bridge.f_assumption`), and to the assumptions its theorems
+ * take as hypotheses. */
 export function linkAtoms(example, declarations) {
   const allNames = new Set(declarations.map(d => d.name));
   const atoms = example.items;
@@ -82,6 +91,7 @@ export function linkAtoms(example, declarations) {
     inherit(atom, atoms.filter(a => a.implementation === atom.leanName), ['spec', 'crypto', 'bridge']);
 }
 
+/** The explorer data of each example in `configs`. */
 export function discover(base = root, configs = examples(base)) {
   const read = p => readFileSync(resolve(base, p), 'utf8');
   const metadata = '.lake/explorer/declarations.json';

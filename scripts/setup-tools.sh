@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Install the pinned Charon, Aeneas and Rust nightly into .tools/, and fetch the examples' locked
+# Cargo dependencies for offline checks. Lean comes from elan and lean-toolchain.
 set -euo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/env.sh"
 cd "$BRIDGE_ROOT"

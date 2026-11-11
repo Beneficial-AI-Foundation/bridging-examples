@@ -1,3 +1,4 @@
+// Inline the stylesheet, icons, scripts and data into shared/template.html: one offline page.
 import { readFileSync } from "node:fs";
 import { deflateRawSync } from "node:zlib";
 

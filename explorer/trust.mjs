@@ -1,7 +1,10 @@
+// The axiom audit and the evidence labels. The allowed axioms are Lean's foundational axioms and
+// the functions Aeneas left opaque.
 import assert from 'node:assert/strict';
 
 const foundationalAxioms = new Set(['propext', 'Classical.choice', 'Quot.sound']);
 
+/** The functions Aeneas left opaque, each an axiom of its example's Aeneas module. */
 export function opaqueFunctionNames(extractions, declarations) {
   const byName = new Map(declarations.map(d => [d.name, d]));
   const names = new Set();
@@ -31,6 +34,7 @@ export function isAssumption(d) {
   return true;
 }
 
+/** Fails on an axiom that is neither foundational nor opaque. */
 export function auditDeclarations(declarations, opaqueFunctions) {
   for (const d of declarations) {
     const untrusted = d.axioms.filter(a => !foundationalAxioms.has(a) && !opaqueFunctions.has(a));
@@ -38,6 +42,7 @@ export function auditDeclarations(declarations, opaqueFunctions) {
   }
 }
 
+/** The status shown for `d`, and its opaque dependencies. */
 export function declarationEvidence(d, opaqueFunctions) {
   const opaqueDependencies = d.axioms.filter(a => opaqueFunctions.has(a));
   const untrusted = d.axioms.some(a => !foundationalAxioms.has(a) && !opaqueFunctions.has(a));
@@ -49,6 +54,7 @@ export function declarationEvidence(d, opaqueFunctions) {
       : d.returnsProp ? d.kind === 'type' ? 'proposition structure' : 'proposition (not a proof)' : d.kind };
 }
 
+/** A theorem, not a structure field, that passes the audit. */
 export function isCheckedTheorem(d) {
   return !d.projectionOf && d.kind === 'theorem' &&
     ['checked theorem', 'checked theorem (opaque boundary)'].includes(d.status);

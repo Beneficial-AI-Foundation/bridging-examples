@@ -1,3 +1,4 @@
+// Repository paths and the list of examples, shared by the scripts and the explorer.
 import { readdirSync, existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -5,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 export const root = fileURLToPath(new URL('../', import.meta.url));
 export const read = path => readFileSync(resolve(root, path), 'utf8');
+/** The files below `dir`, except in `target`, `.lake` and `.git`. */
 export const walk = dir => existsSync(dir) ? readdirSync(dir, { withFileTypes: true })
   .flatMap(e => e.isDirectory() ? (['target', '.lake', '.git'].includes(e.name) ? [] : walk(resolve(dir, e.name))) : [resolve(dir, e.name)]) : [];
 

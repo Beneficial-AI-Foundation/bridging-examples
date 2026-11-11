@@ -1,12 +1,22 @@
 module
 public meta import Common.Metadata
 
+/-!
+# Proof ranges
+
+`#export_proof_ranges` adds to the explorer metadata the extent of each theorem's proof, which
+the explorer folds.
+-/
+
 public meta section
 
 open Lean Elab Command
 
 namespace BridgingExamples.Metadata
 
+/-- Locates the proof of the theorem whose text is `source`. Returns the theorem's name and the
+byte offsets in `source` where the proof starts and ends, or `none` if `source` is not a theorem.
+The proof is the term after `:=`, or the equations or `where` clause in its place. -/
 private def proofRange? (env : Environment) (source : String) : Option (Name × Json) := do
   let command <- (Parser.runParserCategory env `command source).toOption
   let declaration <- command.find? (fun stx => stx.isOfKind ``Parser.Command.theorem)
@@ -17,12 +27,17 @@ private def proofRange? (env : Environment) (source : String) : Option (Name × 
   pure (declaration[1][0].getId,
     Json.mkObj [("startByte", toJson start.byteIdx), ("endByte", toJson stop.byteIdx)])
 
+/-- `#export_proof_ranges "path"` sets `proofRange` on each record written by `#export_explorer`
+to `path` (`null` unless the record is a theorem whose source parses), and adds the private
+theorems of `BridgingExamples`, which `#export_explorer` omits. Sources are parsed with the
+notation in scope at the command. -/
 elab "#export_proof_ranges " output:str : command => do
   let env <- getEnv
   let text <- liftIO <| IO.FS.readFile output.getString
   let .ok json := Json.parse text | throwError "Invalid explorer metadata"
   let .ok exported := json.getArr? | throwError "Expected declarations"
   let mut declarations := exported
+  -- Private theorems whose source parses as a theorem of the same name.
   for (name, info) in env.constants.toList do
     let .thmInfo _ := info | continue
     unless isPrivateName name && !env.isProjectionFn name do continue
