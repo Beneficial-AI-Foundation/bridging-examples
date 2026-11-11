@@ -22,7 +22,7 @@ export function opaqueFunctionNames(extractions, declarations) {
  * `*_assumption` or tagged `assumption_for`. Spec and Bridge theorems take assumptions as
  * hypotheses: deterministic contracts in Spec, distributions in Bridge. */
 export function isAssumption(d) {
-  const tagged = d.links?.some(l => l.stage === 'assumption');
+  const tagged = d.links?.some(l => l.role === 'assumption');
   const named = d.name.endsWith('_assumption');
   if (!tagged && !named) return false;
   assert(d.module.endsWith('.Spec') || d.module.endsWith('.Bridge'), `Assumptions belong in Spec or Bridge: ${d.name}`);

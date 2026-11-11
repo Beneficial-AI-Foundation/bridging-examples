@@ -47,7 +47,7 @@ elab "#export_proof_ranges " output:str : command => do
       ("isProof", toJson true), ("isFunction", toJson info.type.isForall),
       ("axioms", toJson (axioms.map Name.toString)),
       ("links", Json.arr <| linked.map fun link => Json.mkObj [
-        ("stage", toJson link.stage.toString),
+        ("role", toJson link.role.toString),
         ("targets", toJson (link.targets.map Name.toString))])]
   let mut sources : Std.HashMap String (List String) := {}
   let mut rows : Array Json := #[]

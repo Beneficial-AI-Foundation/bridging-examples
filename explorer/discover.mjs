@@ -23,49 +23,49 @@ function counterpartSuffixes(atom, crate) {
 export function linkAtoms(example, declarations) {
   const allNames = new Set(declarations.map(d => d.name));
   const atoms = example.items;
-  for (const stage of ['spec', 'crypto', 'bridge', 'assumption']) {
-    for (const decl of example.declarations.filter(d => stage === 'assumption' ? isAssumption(d) : d.stage === stage)) {
-      for (const link of decl.links.filter(l => l.stage === stage)) for (const target of link.targets) {
-        assert(allNames.has(target), `Dangling ${stage} target ${target}`);
-        assert(atoms.some(a => a.leanName === target), `Non-atom ${stage} target ${target}`);
+  for (const role of ['spec', 'crypto', 'bridge', 'assumption']) {
+    for (const decl of example.declarations.filter(d => role === 'assumption' ? isAssumption(d) : d.stage === role)) {
+      for (const link of decl.links.filter(l => l.role === role)) for (const target of link.targets) {
+        assert(allNames.has(target), `Dangling ${role} target ${target}`);
+        assert(atoms.some(a => a.leanName === target), `Non-atom ${role} target ${target}`);
       }
     }
   }
   const inferred = [];
   const namespaces = { spec: 'Spec', crypto: 'Crypto', bridge: 'Bridge' };
-  function matching(atom, stage, candidates, suffix = '', namespace = namespaces[stage]) {
+  function matching(atom, role, candidates, suffix = '', namespace = namespaces[role]) {
     const names = counterpartSuffixes(atom, example.crate)
       .map(name => `${example.crate}.${namespace}.${name}${suffix}`);
-    const eligible = candidates.filter(d => !d.links.some(l => l.stage === stage));
+    const eligible = candidates.filter(d => !d.links.some(l => l.role === role));
     const exact = eligible.filter(d => d.name === names[0]);
     const matches = exact.length ? exact : eligible.filter(d => names.slice(1).includes(d.name));
-    assert(matches.length <= 1, `Ambiguous ${stage} counterparts for ${atom.leanName}; add an explicit annotation`);
-    for (const decl of matches) inferred.push({ atom, stage, name: decl.name });
+    assert(matches.length <= 1, `Ambiguous ${role} counterparts for ${atom.leanName}; add an explicit annotation`);
+    for (const decl of matches) inferred.push({ atom, role, name: decl.name });
     return matches;
   }
   const assumptions = example.declarations.filter(d => isAssumption(d));
   for (const atom of atoms) {
     if (!atom.leanName) continue;
     const specs = example.declarations.filter(d => d.stage === 'spec' && !isAssumption(d));
-    const taggedSpecs = specs.filter(d => d.links.some(l => l.stage === 'spec' && l.targets.includes(atom.leanName)));
+    const taggedSpecs = specs.filter(d => d.links.some(l => l.role === 'spec' && l.targets.includes(atom.leanName)));
     atom.spec = [...taggedSpecs, ...matching(atom, 'spec', specs, '_spec')].map(d => d.name);
     const counterparts = example.declarations.filter(d => d.stage === 'crypto');
-    const tagged = counterparts.filter(d => d.links.some(l => l.stage === 'crypto' && l.targets.includes(atom.leanName)));
+    const tagged = counterparts.filter(d => d.links.some(l => l.role === 'crypto' && l.targets.includes(atom.leanName)));
     atom.crypto = (tagged.length ? tagged : matching(atom, 'crypto', counterparts)).map(d => d.name);
     assert(atom.crypto.length <= 1, `Ambiguous Crypto counterparts for ${atom.leanName}`);
     const bridges = example.declarations.filter(d => d.stage === 'bridge' && !isAssumption(d));
-    const taggedBridges = bridges.filter(d => d.links.some(l => l.stage === 'bridge' && l.targets.includes(atom.leanName)));
+    const taggedBridges = bridges.filter(d => d.links.some(l => l.role === 'bridge' && l.targets.includes(atom.leanName)));
     atom.bridge = [...taggedBridges, ...matching(atom, 'bridge', bridges, '_bridge')].map(d => d.name);
-    const taggedAssumptions = assumptions.filter(d => d.links.some(l => l.stage === 'assumption' && l.targets.includes(atom.leanName)));
+    const taggedAssumptions = assumptions.filter(d => d.links.some(l => l.role === 'assumption' && l.targets.includes(atom.leanName)));
     atom.assumptions = [...new Set([...taggedAssumptions,
       ...matching(atom, 'assumption', assumptions, '_assumption', 'Spec'),
       ...matching(atom, 'assumption', assumptions, '_assumption', 'Bridge')].map(d => d.name))];
     const theorems = example.declarations.filter(d => atom.spec.includes(d.name) || atom.bridge.includes(d.name));
     atom.hypotheses = assumptions.filter(d => theorems.some(t => t.typeReferences?.includes(d.name))).map(d => d.name);
   }
-  for (const { atom, stage, name } of inferred) {
-    assert(!atoms.some(other => other !== atom && other[stage === 'assumption' ? 'assumptions' : stage]?.includes(name)),
-      `Ambiguous ${stage} counterpart ${name} for ${atom.leanName}; add an explicit annotation`);
+  for (const { atom, role, name } of inferred) {
+    assert(!atoms.some(other => other !== atom && other[role === 'assumption' ? 'assumptions' : role]?.includes(name)),
+      `Ambiguous ${role} counterpart ${name} for ${atom.leanName}; add an explicit annotation`);
   }
   // An assumption about a trait is an assumption about each of its methods.
   for (const atom of atoms.filter(a => a.trait)) {

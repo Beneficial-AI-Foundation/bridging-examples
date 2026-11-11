@@ -4,17 +4,15 @@ public meta import Lean
 /-!
 # Explorer metadata
 
-The explorer links each extracted atom to its handwritten spec, Crypto counterpart, bridge
-theorem and assumptions. It finds them by name (`crate.Spec.f_spec`, `crate.Crypto.f`,
-`crate.Bridge.f_bridge`, …), and by the attributes of this file where names do not match.
+For each extracted atom, the explorer shows its spec, Crypto counterpart, bridge theorem and
+assumptions. It finds them by name (`crate.Spec.f_spec`, `crate.Crypto.f`,
+`crate.Bridge.f_bridge`, …). Where a name does not follow this pattern, one of the attributes
+`@[spec_for a…]`, `@[crypto_for a…]`, `@[bridge_for a…]` and `@[assumption_for a…]` links the
+declaration to the atoms `a…`.
 
-* `@[spec_for a…]`, `@[crypto_for a…]`, `@[bridge_for a…]` and `@[assumption_for a…]` link a
-  declaration to the extracted atoms `a…`.
-* `#export_explorer "path"` writes the compiled declarations of the `BridgingExamples` and
-  `Common` modules, with their links, as JSON.
-
-`explorer/export.mjs` runs `#export_explorer` in a file that imports every module, followed by
-`#export_proof_ranges` (`Common/SourceRanges.lean`).
+`explorer/export.mjs` runs `#export_explorer "path"`, which writes every declaration of the
+`BridgingExamples` and `Common` modules to a JSON file, with its source lines, type, axioms and
+links. The explorer page is generated from that file.
 -/
 
 public meta section
@@ -23,10 +21,10 @@ open Lean Elab Command
 
 namespace BridgingExamples.Metadata
 
-/-- A link recorded by one attribute: `declaration` is linked to the extracted atoms `targets`
-in `stage`, one of `spec`, `crypto`, `bridge` and `assumption`. -/
+/-- A link made by an attribute: `declaration` has the role `role` (`spec`, `crypto`, `bridge`
+or `assumption`) for each extracted atom in `targets`. -/
 structure Link where
-  stage : Name
+  role : Name
   declaration : Name
   targets : Array Name
   deriving Inhabited
@@ -45,16 +43,17 @@ syntax (name := bridgeFor) "bridge_for" ident+ : attr
 /-- `@[assumption_for a…]`: this declaration is an assumption about the atoms `a…`. -/
 syntax (name := assumptionFor) "assumption_for" ident+ : attr
 
-/-- Registers the attribute `name`, which links a declaration to its arguments in `stage`. Each
-argument must name an existing constant, so a misspelled atom is an error. -/
-private def registerLink (name : Name) (stage : Name) : IO Unit :=
+/-- Registers the attribute `name`, which gives a declaration the role `role` for the atoms named
+by its arguments. Each argument must name an existing constant, so a misspelled atom is an error.
+-/
+private def registerLink (name : Name) (role : Name) : IO Unit :=
   registerBuiltinAttribute {
     name
     descr := "Associate a local declaration with existing atoms."
     add := fun declaration stx kind => do
       let targets ← stx[1].getArgs.mapM fun target =>
         Elab.realizeGlobalConstNoOverloadWithInfo target
-      links.add { stage, declaration, targets } kind
+      links.add { role, declaration, targets } kind
   }
 
 initialize registerLink `specFor `spec
@@ -74,7 +73,8 @@ source position. A record has the fields:
 * `projectionOf`: for a structure field, the structure;
 * `returnsProp`: the type ends in `Prop`, as for a predicate; `isProof`: the type is a
   proposition, as for a theorem; `isFunction`: the type has binders;
-* `axioms`, the axioms the declaration depends on, and `links`, its attribute links. -/
+* `axioms`, the axioms the declaration depends on, and `links`, the role and target atoms of
+  each of its attributes. -/
 elab "#export_explorer " output:str : command => do
   let env ← getEnv
   let mut rows : Array Json := #[]
@@ -109,7 +109,7 @@ elab "#export_explorer " output:str : command => do
       ("typeReferences", toJson (info.type.getUsedConstants.map Name.toString)),
       ("axioms", toJson (axioms.map Name.toString)),
       ("links", Json.arr <| linked.map fun link => Json.mkObj [
-        ("stage", toJson link.stage.toString),
+        ("role", toJson link.role.toString),
         ("targets", toJson (link.targets.map Name.toString))])]
   liftIO <| IO.FS.writeFile output.getString (Json.arr rows).pretty
 
