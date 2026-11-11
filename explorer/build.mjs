@@ -51,10 +51,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const html = renderHtml(data, verso);
   if (process.argv.includes('--check')) assert.equal(read('explorer/site/index.html'), html, 'Explorer is stale');
   else {
-    mkdirSync(new URL('site/etm/', import.meta.url), { recursive: true });
+    mkdirSync(new URL('site/', import.meta.url), { recursive: true });
     writeFileSync(new URL('site/index.html', import.meta.url), html);
-    // The same page, opening on Encrypt then Mac.
-    writeFileSync(new URL('site/etm/index.html', import.meta.url), renderHtml({ ...data, defaultExample: 'EtM' }, verso));
     writeFileSync(new URL('site/manifest.json', import.meta.url), JSON.stringify(data, null, 2) + '\n');
   }
   console.log(`${data.examples.length} examples; extraction, metadata, and source hashes agree.` +
