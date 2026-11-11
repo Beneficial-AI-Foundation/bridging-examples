@@ -200,7 +200,7 @@
         "bridge": 1,
         "checkedBridge": 1
       },
-      "revision": "1af37ee25a183b52df7f6a78dbf073bea54935fc",
+      "revision": "9f3f3e665e41940672634eea7b77a1e75141d6c7",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "Byte identity for an extraction smoke test.",
@@ -274,7 +274,7 @@
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "1af37ee25a183b52df7f6a78dbf073bea54935fc",
+      "revision": "9f3f3e665e41940672634eea7b77a1e75141d6c7",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "Fill a buffer from an external random number generator.",
@@ -377,7 +377,7 @@
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "1af37ee25a183b52df7f6a78dbf073bea54935fc",
+      "revision": "9f3f3e665e41940672634eea7b77a1e75141d6c7",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "One-byte masking: a fresh random pad, combined with the value by XOR.",
@@ -601,7 +601,7 @@
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "1af37ee25a183b52df7f6a78dbf073bea54935fc",
+      "revision": "9f3f3e665e41940672634eea7b77a1e75141d6c7",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "Educational byte-sized salted-hash commitment.",
@@ -747,7 +747,7 @@
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "1af37ee25a183b52df7f6a78dbf073bea54935fc",
+      "revision": "9f3f3e665e41940672634eea7b77a1e75141d6c7",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "Sampling and additive masking modulo q.",
@@ -1171,7 +1171,7 @@
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "1af37ee25a183b52df7f6a78dbf073bea54935fc",
+      "revision": "9f3f3e665e41940672634eea7b77a1e75141d6c7",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "Encrypt then Mac with sampled nonces.",
@@ -1365,7 +1365,7 @@
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "1af37ee25a183b52df7f6a78dbf073bea54935fc",
+      "revision": "9f3f3e665e41940672634eea7b77a1e75141d6c7",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "One-time pad encryption of 16-byte blocks.",
@@ -1638,7 +1638,7 @@
         "bridge": 0,
         "checkedBridge": 0
       },
-      "revision": "1af37ee25a183b52df7f6a78dbf073bea54935fc",
+      "revision": "9f3f3e665e41940672634eea7b77a1e75141d6c7",
       "dirty": true,
       "repository": "https://github.com/sergiubur/bridging-examples",
       "description": "A finite lazy oracle with a generic mutable RNG interface.",

@@ -187,15 +187,20 @@ function render(preserveScroll = false) {
   $('#font-size').value=state.font; document.documentElement.style.setProperty('--code-size',`${state.font}px`);
   $('#show-support').checked=state.support;
   const active=Panels.active(state);
-  $('#panes').innerHTML=Explorer.stages.map(stage=>{
+  $('#panes').innerHTML=Explorer.stages.map((stage,index)=>{
     const expanded=state[stage],disabled=expanded&&active.length===1;
     const label=`${expanded?'Minimize':'Restore'} ${titles[stage]}`;
     const toggle=`<button class="pane-toggle" data-toggle="${stage}" title="${label}" aria-label="${label}" aria-expanded="${expanded}"${disabled?' disabled':''}>${icon(expanded?'minus':'plus')}</button>`;
-    if(!expanded)return `<section class="pane ${stage} minimized"><div class="pane-header">${toggle}<h3>${titles[stage]}</h3></div></section>`;
-    const options=Explorer.files(data,stage,state.support),file=data.files[files[stage]];
-    const next=active[active.indexOf(stage)+1],previous=active[active.indexOf(stage)-1];
-    const railsBefore=previous&&Explorer.stages[Explorer.stages.indexOf(stage)-1]!==previous;
+    // The expanded panels on either side. Every line between them is a divider that resizes them:
+    // the edges of the two panels and, between minimized panels, the right edge of each one.
+    const previous=Explorer.stages.slice(0,index).filter(s=>state[s]).pop(),next=Explorer.stages.slice(index+1).find(s=>state[s]);
     const handle=(left,right,side)=>`<div class="pane-resizer${side}" data-resize="${left}" role="separator" tabindex="0" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-label="Resize ${titles[left]} and ${titles[right]}" title="Drag to resize; double-click to reset"></div>`;
+    if(!expanded){
+      const divider=previous&&next&&!state[Explorer.stages[index+1]]?handle(previous,next,''):'';
+      return `<section class="pane ${stage} minimized"><div class="pane-header">${toggle}<h3>${titles[stage]}</h3></div>${divider}</section>`;
+    }
+    const options=Explorer.files(data,stage,state.support),file=data.files[files[stage]];
+    const railsBefore=previous&&Explorer.stages[index-1]!==previous;
     return `<section class="pane ${stage}"><div class="pane-header"><div class="pane-title"><h3>${titles[stage]}</h3><div class="pane-actions"><button class="pane-toggle" data-copy="${stage}" title="Copy displayed source" aria-label="Copy ${titles[stage]} source"${!file?' disabled':''}>${icon('copy')}</button><button class="pane-toggle" data-download="${stage}" title="Download complete file" aria-label="Download ${titles[stage]} file"${!file?' disabled':''}>${icon('download')}</button>${toggle}</div></div><select class="source-picker" data-source="${stage}" aria-label="${titles[stage]} source file"${!options.length?' disabled':''}>${options.map(p=>`<option value="${esc(p)}"${files[stage]===p?' selected':''}>${esc(p)}</option>`).join('')}</select></div><div class="pane-body" id="pane-body-${stage}">${body(stage)}</div>${railsBefore?handle(previous,stage,' leading'):''}${next?handle(stage,next,''):''}</section>`;
   }).join('');
   for(const stage of Explorer.stages){$('#show-'+stage).checked=state[stage];$('#show-'+stage).disabled=state[stage]&&active.length===1;}
