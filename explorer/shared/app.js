@@ -1,3 +1,5 @@
+// The explorer page: the overview and the five panels, drawn from the embedded data, with the
+// state (example, atom, panels, widths, files) kept in the URL hash.
 (() => {
 'use strict';
 /* PANEL_STATE */
@@ -6,12 +8,14 @@ const bundle = JSON.parse(document.getElementById('source-data').textContent);
 const $ = s => document.querySelector(s);
 const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const titles = { rust:'Rust', aeneas:'Aeneas', spec:'Spec', crypto:'Crypto', bridge:'Bridge' };
+// `data`: the example shown; `item`: the selected atom; `files`: the file shown in each panel.
 let data, item, home = false, state = {}, files = {}, drag = null;
 const widths = new Map();
 const openProofs = new Set();
 const mobile = matchMedia('(max-width: 760px)');
 const icon = name => `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
 
+// Reads the state from the URL hash.
 function load() {
   const params = new URLSearchParams(location.hash.slice(1));
   home = params.get('view') === 'home' || (!params.has('example') && !bundle.defaultExample);
@@ -23,6 +27,7 @@ function load() {
   widths.set(Panels.signature(state), Panels.readWeights(state, selected.params.get('widths')));
   for (const stage of Explorer.stages) files[stage] = Explorer.file(data, item, stage, selected.params.get(`${stage}File`), state.support);
 }
+// Writes the state to the URL hash, replacing the current history entry.
 function save() {
   if (home) return;
   const p = new URLSearchParams();
@@ -31,6 +36,7 @@ function save() {
   p.set('widths', Panels.weights(state, widths.get(Panels.signature(state))).map(n => n.toFixed(6)).join(','));
   history.replaceState(null, '', `#${p}`);
 }
+// Selects atom `id`; after a click on a line (`origin`), that panel keeps its file and scroll.
 function select(id, origin) {
   const selected = Explorer.selection(data,id,state.support,origin);
   item = selected.item; files = selected.files; state.item = item?.id ?? '';
@@ -42,11 +48,13 @@ function select(id, origin) {
     panel.scrollLeft = origin.left;
   }
 }
+// Plain colouring of keywords, comments, strings and numbers, where Verso's rendering is absent.
 function highlight(line) {
   const parts = line.split(/(\/\/.*|--.*|"(?:\\.|[^"\\])*"|\b(?:pub|fn|let|mut|type|trait|struct|impl|def|abbrev|theorem|structure|namespace|end|import|open|where|do|by|pure|match|with|if|then|else|fun|return|some|none|Some|None)\b|\b\d+\b)/g);
   return parts.map((p,i) => i % 2 ? `<span class="token-${p.startsWith('//') || p.startsWith('--') ? 'comment' : /^\d/.test(p) ? 'number' : p.startsWith('"') ? 'string' : 'keyword'}">${esc(p)}</span>` : esc(p)).join('');
 }
 function ranges(stage) { return Explorer.entries(data,item,stage); }
+// The text copied from a panel: the whole file, or the focused declarations.
 function visibleText(stage) {
   const file = data.files[files[stage]];
   if (!file) return '';
@@ -54,6 +62,8 @@ function visibleText(stage) {
   const entries = ranges(stage).filter(r => r.file === file.path);
   return entries.map(r => file.text.split('\n').slice(r.start-1,r.end).join('\n')).join('\n\n');
 }
+// Numbered lines of one part of a range: focus highlighting, assumption labels, and line numbers
+// that select their atom.
 function codePart(file, stage, part) {
   const rows = part.text.replace(/\n$/, '').split('\n');
   let firstLine = part.line;
@@ -79,6 +89,7 @@ function codePart(file, stage, part) {
     return `${badge}<span class="line${focused ? ' focused':''}" data-line="${n}"${atom ? ` data-atom="${esc(atom.id)}"`:''}${declaration ? ` title="${esc(trustTitle)}"`:''}>${number}<code>${text || ' '}</code></span>`;
   }).join('')}</pre>`;
 }
+// A line range, with each theorem's proof in a folded `details` element.
 function code(file, stage, start, end) {
   return Explorer.proofParts(file,data.declarations,{start,end}).map(part=>{
     const content = codePart(file,stage,part);
@@ -87,6 +98,7 @@ function code(file, stage, start, end) {
     return `<details class="proof-body" data-proof="${esc(key)}"${openProofs.has(key)?' open':''}><summary aria-label="Proof of ${esc(part.declaration.name)}">Proof</summary>${content}</details>`;
   }).join('');
 }
+// A panel's content: the pending message, the declaration picker, and the source.
 function body(stage) {
   const file = data.files[files[stage]];
   const related = ranges(stage);
@@ -112,6 +124,7 @@ function overview() {
   const tiles=bundle.examples.map(e=>`<a class="example-tile" href="#example=${esc(e.id)}"><strong>${esc(e.name)}</strong><span>${esc(e.description||'')}</span></a>`).join('');
   return `<div class="home-inner">${diagram}<div class="example-tiles">${tiles}</div></div>`;
 }
+// Panel widths: `widths` holds the weights for each combination of expanded panels.
 function layout() { return Panels.layout(state,widths.get(Panels.signature(state)),$('#panes').clientWidth); }
 function resize() {
   if (mobile.matches || home) return;
@@ -122,6 +135,7 @@ function resize() {
     el.setAttribute('aria-valuenow',Math.round(100*l.sizes[el.dataset.resize]/(l.sizes[el.dataset.resize]+l.sizes[next])));
   });
 }
+// Ends a divider drag; without `commit`, the widths before the drag are restored.
 function endDrag(commit) {
   if (!drag) return;
   const old = drag; drag = null;
@@ -131,6 +145,7 @@ function endDrag(commit) {
   old.el.blur(); resize(); save();
 }
 function resetWidths() { endDrag(false); widths.delete(Panels.signature(state)); resize(); save(); }
+// Dividers: drag to resize, double-click, Home or Enter to reset, arrows to step, Escape to cancel.
 function wireResize() {
   for (const el of document.querySelectorAll('[data-resize]')) {
     el.onpointerdown=e=>{
@@ -151,6 +166,8 @@ function wireResize() {
     };
   }
 }
+// Draws the page from the state, then attaches the handlers of the new panels. Each panel scrolls
+// to the selected atom, or keeps its position when `preserveScroll` is set.
 function render(preserveScroll = false) {
   const scroll = new Map(Explorer.stages.map(stage => [stage, $('#pane-body-'+stage)?.scrollTop]));
   endDrag(true);
@@ -210,12 +227,14 @@ function render(preserveScroll = false) {
   wireResize();resize();bindVerso();
   if(state.mode==='files')for(const stage of active){const first=ranges(stage).find(r=>r.file===files[stage]);const panel=$('#pane-body-'+stage);const line=first&&panel?.querySelector(`[data-line="${first.start}"]`);const target=line;if(preserveScroll&&scroll.get(stage)!=null)panel.scrollTop=scroll.get(stage);else if(target)panel.scrollTop=Math.max(0,target.offsetTop-panel.offsetTop-45);}
 }
+// The Sources dialog: revision, assumptions, coverage, tool versions and file hashes.
 function provenance() {
   const source = f => data.repository && data.revision && !data.dirty
     ? `<a href="${esc(data.repository+'/blob/'+data.revision+'/'+f.path.split('/').map(encodeURIComponent).join('/'))}" target="_blank" rel="noopener">${esc(f.path)}</a>` : esc(f.path);
   $('#provenance-body').innerHTML=`<p>Revision ${esc(data.revision||'unrecorded')}${data.dirty?' + local changes':''}. Spec and Bridge theorems take the assumptions listed below as explicit hypotheses; the only axioms are the opaque function symbols recorded by Aeneas. Assumptions are stated contracts, not verified library implementations.</p><p>${data.declarations.filter(d=>d.status==='assumption').map(d=>esc(d.name)).join('<br>')}</p><p>${data.coverage?`${data.coverage.checkedBridge} atoms have checked bridge theorems; ${data.coverage.bridge} have associated evidence.`:'Atom coverage is unknown until extraction.'}</p><p>${esc(bundle.lean)}${data.versions?` · Aeneas ${esc(data.versions.aeneas)} · Charon ${esc(data.versions.charon)}`:''}</p><p>${(bundle.references||[]).map(r=>`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.path)}</a>`).join('<br>')}</p><table class="provenance-table">${Object.values(data.files).map(f=>`<tr><th>${esc(f.stage)}</th><td>${source(f)}<span class="hash">SHA-256 ${f.sha256}</span></td></tr>`).join('')}</table>${data.external?.length?`<h3>External boundaries</h3><ul>${data.external.map(d=>`<li>${esc(d.name)} (${esc(d.category)})</li>`).join('')}</ul>`:''}`;
   $('#provenance-dialog').showModal();
 }
+// The controls outside the panels.
 $('#example-picker').innerHTML='<option value="">Overview</option>'+bundle.examples.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
 $('#example-picker').onchange=e=>{
   if(!e.target.value){location.hash='view=home';return;}
@@ -249,6 +268,7 @@ function bindVerso() {
   });
   window.versoInit();
 }
+// Unpacks Verso's rendering, embedded by render.mjs, and redraws.
 async function loadVerso() {
   const packed = document.getElementById('verso-data');
   if (!packed || !window.versoInit || !window.DecompressionStream) return;

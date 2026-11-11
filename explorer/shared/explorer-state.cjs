@@ -1,14 +1,19 @@
 "use strict";
+// The explorer's lookups: examples and atoms, the declarations shown for an atom in each panel,
+// proof folding, URL parameters, and the messages of empty panels.
 const Explorer = {
   stages: ['rust', 'aeneas', 'spec', 'crypto', 'bridge'],
+  // `files` shows whole files; `declaration` restricts each panel to the selected atom.
   mode: value => value === 'declaration' ? 'declaration' : 'files',
   toggleMode: value => value === 'declaration' ? 'files' : 'declaration',
+  // The label shown before a declaration; only assumptions have one.
   evidence(declaration) {
     if (declaration.projectionOf) return null;
     if (declaration.status === 'assumption') return { kind: 'assumption', label: 'Assumption' };
     return null;
   },
   example(bundle, id) { return bundle.examples.find(e => e.id === id) || bundle.examples.find(e => e.id === bundle.defaultExample) || bundle.examples[0]; },
+  // An atom by id, Lean name, alias (`item-aliases` in Cargo.toml) or unique suffix.
   item(example, id) {
     if (!id) return null;
     id = example.itemAliases?.[id] || id;
@@ -16,6 +21,7 @@ const Explorer = {
     return example.items.find(i => i.id === id || i.leanName === id) ||
       (suffixes.length === 1 ? suffixes[0] : null);
   },
+  // The atom that line `line` of `file` belongs to, or null.
   atomAt(example, stage, file, line) {
     const declarations = example.declarations.filter(d => d.stage === stage && d.file === file &&
       d.start <= line && line <= (d.end || Infinity));
@@ -33,16 +39,20 @@ const Explorer = {
     const matches = example.items.filter((_, index) => sizes[index].includes(smallest));
     return matches.length === 1 ? matches[0] : null;
   },
+  // The atom `id` and the file of each panel; the panel clicked (`origin`) keeps its file.
   selection(example, id, support, origin) {
     const item = this.item(example, id);
     const files = Object.fromEntries(this.stages.map(stage => [stage,
       this.file(example, item, stage, origin?.stage === stage ? origin.file : null, support)]));
     return { item, files };
   },
+  // A plain left click, without selected text, selects the atom of a line.
   shouldSelectCode(event, selectedText) {
     return event.button === 0 && event.detail <= 1 && !selectedText &&
       !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
   },
+  // What `item` highlights in `stage`: its Rust or Aeneas range, or its linked declarations,
+  // with its assumptions and hypotheses in Spec and Bridge.
   entries(example, item, stage) {
     if (!item) return [];
     if (stage === 'rust' || stage === 'aeneas') return item[stage] ? [item[stage]] : [];
@@ -50,6 +60,7 @@ const Explorer = {
       ...(['spec', 'bridge'].includes(stage) ? [...(item.assumptions || []), ...(item.hypotheses || [])] : [])];
     return example.declarations.filter(d => d.stage === stage && names.includes(d.name));
   },
+  // The line ranges drawn: the whole file, or the `selected` ranges with adjacent ones merged.
   sourceBlocks(example, file, selected) {
     const lineCount = file.text.split('\n').length;
     const ranges = [];
@@ -62,6 +73,8 @@ const Explorer = {
     }
     return ranges;
   },
+  // Cuts a line range into parts, marking the proofs of Spec and Bridge theorems for folding.
+  // `proofRange` counts UTF-8 bytes from the declaration's first line; parts count characters.
   proofParts(file, declarations, range) {
     const rows = file.text.split('\n');
     let offset = 0;
@@ -100,14 +113,17 @@ const Explorer = {
     append(cursor, end);
     return parts;
   },
+  // The files of a panel, main files first; supporting files only when `support` is set.
   files(example, stage, support) {
     return Object.keys(example.files).filter(p => example.files[p].stage === stage && (support || !example.files[p].support))
       .sort((a, b) => Number(example.files[a].support) - Number(example.files[b].support) || a.localeCompare(b));
   },
+  // The file a panel shows: `requested`, else the first with `item`, else the first.
   file(example, item, stage, requested, support) {
     const files = this.files(example, stage, support);
     return files.includes(requested) ? requested : this.entries(example, item, stage).find(e => files.includes(e.file))?.file || files[0];
   },
+  // The example, atom and mode of a URL; old links (`properties`, `security`) open Bridge.
   normalize(bundle, params) {
     const example = this.example(bundle, params.get('example'));
     const item = this.item(example, params.get('item'));
@@ -127,6 +143,7 @@ const Explorer = {
     for (const key of ['properties', 'propertiesFile', 'security', 'securityFile']) normalized.delete(key);
     return { example: example.id, item: item?.id ?? null, mode: this.mode(params.get('mode')), params: normalized };
   },
+  // The message of a panel with nothing to show for `item`.
   pending(example, item, stage) {
     if (stage === 'aeneas' && example.extraction === 'missing') return 'Not extracted';
     if (!item) return example.extraction === 'missing' ? 'Coverage unknown until extraction' : 'No source file';
@@ -137,4 +154,3 @@ const Explorer = {
     return { spec: 'Functional specification pending', crypto: 'Crypto counterpart pending' }[stage] || 'Bridge theorem pending';
   },
 };
-if (typeof module !== 'undefined') module.exports = Explorer;
