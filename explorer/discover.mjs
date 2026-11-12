@@ -196,14 +196,22 @@ export function discover(base = root, configs = examples(base)) {
         example.items.splice(owner < 0 ? example.items.length : owner + 1, 0, ...methods);
       }
     } else assert(!generated.length, `Incomplete extraction: ${config.id} has Lean files but no translation.json`);
-    // A handwritten file in a folder of the example belongs to that bridge method. A file beside
-    // Aeneas.lean is shared by the methods that have no file of that name.
-    for (const p of walk(resolve(base, config.dir)).filter(p => p.endsWith('.lean') && relative(base, p) !== config.aeneas)) {
+    // A folder of the example that holds a Bridge.lean is a bridge method, and the handwritten
+    // files in it are its own. The other files, beside Aeneas.lean or in a folder without a
+    // Bridge.lean, are shared by the methods that have no file of that name.
+    const handwritten = walk(resolve(base, config.dir)).filter(p => p.endsWith('.lean') && relative(base, p) !== config.aeneas);
+    const below = p => relative(resolve(base, config.dir), p).split('/');
+    const bridgeFolders = new Set(handwritten.map(below).filter(parts => parts.length === 2 && parts[1] === 'Bridge.lean').map(parts => parts[0]));
+    for (const p of handwritten) {
       const filename = basename(p, '.lean');
       const stage = filename === 'Spec' ? 'spec' : filename === 'Crypto' ? 'crypto' : 'bridge';
-      const [folder, ...below] = relative(resolve(base, config.dir), p).split('/');
-      file(relative(base, p), stage, !['Spec', 'Crypto', 'Bridge'].includes(filename),
-        below.length && folder !== 'rust' ? folder : null);
+      const support = !['Spec', 'Crypto', 'Bridge'].includes(filename);
+      const [folder, ...rest] = below(p);
+      const method = rest.length && bridgeFolders.has(folder) ? folder : null;
+      // An incomplete bridge folder is reported, not shown to the other methods as shared files.
+      assert(support || method || !rest.length,
+        `${config.dir}/${folder} holds ${rest.join('/')} but no Bridge.lean of its own; only a bridge folder holds a Spec.lean, Crypto.lean or Bridge.lean`);
+      file(relative(base, p), stage, support, method);
     }
     for (const d of declarations) {
       const path = `${d.module.replaceAll('.', '/')}.lean`;
@@ -251,7 +259,6 @@ export function discover(base = root, configs = examples(base)) {
       `${config.dir}/Bridge.lean is beside bridge folders; move it into a folder of its own`);
     example.methods = folders.map(id => {
       const bridge = example.files[`${config.dir}/${id}/Bridge.lean`];
-      assert(bridge, `${config.dir}/${id} is a bridge folder without a Bridge.lean`);
       // The first line of the module docstring describes the method.
       return { id, name: id.replace(/(?<=[a-z])(?=[A-Z])/g, ' '),
         description: bridge.text.match(/\/-!\s*(?:#+\s*)?(.*?)\s*(?:-\/|$)/m)?.[1] || '', ...linked(id) };

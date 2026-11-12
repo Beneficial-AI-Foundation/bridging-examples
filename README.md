@@ -11,8 +11,9 @@ stages below; most currently stop at Aeneas, and only Smoke has Spec, Crypto and
 - **Bridge**: distributional equivalence of Aeneas and Crypto models, under assumed probabilistic specifications for externally called functions.
 
 An example may have several bridges, which can differ in Spec, Crypto and proof method. Each bridge
-is then in a folder of the example, and the explorer switches between them: Smoke has `Direct/`
-and `Distributional/`.
+is then a folder of the example with its own `Bridge.lean`, and the explorer switches between
+them: Smoke has `Direct/` and `Distributional/`. A folder without a `Bridge.lean` holds files
+shared by the bridges.
 
 ## Examples
 
