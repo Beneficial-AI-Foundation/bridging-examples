@@ -65,6 +65,8 @@ export function linkAtoms(example, declarations) {
     const bridges = example.declarations.filter(d => d.stage === 'bridge' && !isAssumption(d));
     const taggedBridges = bridges.filter(d => d.links.some(l => l.role === 'bridge' && l.targets.includes(atom.leanName)));
     atom.bridge = [...taggedBridges, ...matching(atom, 'bridge', bridges, '_bridge')].map(d => d.name);
+    for (const d of example.declarations.filter(d => atom.spec.includes(d.name) || atom.bridge.includes(d.name)))
+      assert(d.kind === 'theorem', `${d.name} is linked to ${atom.leanName} as a ${d.stage} but is not a theorem`);
     const taggedAssumptions = assumptions.filter(d => d.links.some(l => l.role === 'assumption' && l.targets.includes(atom.leanName)));
     atom.assumptions = [...new Set([...taggedAssumptions,
       ...matching(atom, 'assumption', assumptions, '_assumption', 'Spec'),

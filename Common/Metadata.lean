@@ -44,8 +44,8 @@ syntax (name := bridgeFor) "bridge_for" ident+ : attr
 syntax (name := assumptionFor) "assumption_for" ident+ : attr
 
 /-- Registers the attribute `name`, which gives a declaration the role `role` for the atoms named
-by its arguments. Each argument must name an existing constant, so a misspelled atom is an error.
--/
+by its arguments. Each argument must name an existing constant, so a misspelled atom is an error,
+and a spec or bridge must be a theorem. -/
 private def registerLink (name : Name) (role : Name) : IO Unit :=
   registerBuiltinAttribute {
     name
@@ -53,6 +53,10 @@ private def registerLink (name : Name) (role : Name) : IO Unit :=
     add := fun declaration stx kind => do
       let targets ← stx[1].getArgs.mapM fun target =>
         Elab.realizeGlobalConstNoOverloadWithInfo target
+      if role == `spec || role == `bridge then
+        -- The kind is known before the proof is checked, so this does not wait for it.
+        unless ((← getEnv).findAsync? declaration).any (·.kind == .thm) do
+          throwError "`{role}_for` can only be applied to a theorem, and `{declaration}` is not one"
       links.add { role, declaration, targets } kind
   }
 
