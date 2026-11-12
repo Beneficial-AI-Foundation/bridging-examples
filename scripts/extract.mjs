@@ -6,7 +6,7 @@
 import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync, renameSync, readdirSync, rmSync, existsSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { resolve, relative, delimiter } from 'node:path';
 import { createHash } from 'node:crypto';
 import { examples, root, read, walk } from './examples.mjs';
 
@@ -17,7 +17,13 @@ const all = examples();
 const selected = check && !names.length ? all.filter(e => existsSync(resolve(root, e.translation)))
   : names.map(name => all.find(e => e.id === name) ?? assert.fail(`${usage}\nUnknown example: ${name}`));
 assert(selected.length, usage);
-const run = (cmd, args, cwd = root) => execFileSync(cmd, args, { cwd, stdio: 'inherit', env: { ...process.env, CARGO_INCREMENTAL: '0' } });
+// The binaries that check-pins.py verifies, not whatever `charon` and `aeneas` PATH resolves to.
+// Charon finds charon-driver beside itself but takes `rustup` from PATH, so select the pinned one
+// here as scripts/env.sh does.
+const tool = (...parts) => resolve(root, '.tools', ...parts);
+const env = { ...process.env, CARGO_INCREMENTAL: '0', RUSTUP_HOME: tool('rustup'), CARGO_HOME: tool('cargo'),
+  PATH: `${tool('cargo/bin')}${delimiter}${process.env.PATH}` };
+const run = (cmd, args, cwd = root) => execFileSync(cmd, args, { cwd, stdio: 'inherit', env });
 const hashes = paths => Object.fromEntries(paths.map(p => [p, createHash('sha256').update(read(p)).digest('hex')]));
 // The pin check reads the Lake checkouts, which the cache fetch creates in a fresh clone.
 run('lake', ['exe', 'cache', 'get']);
@@ -28,12 +34,12 @@ for (const example of selected) {
     .filter(p => p.endsWith('.rs') || p.endsWith('Cargo.toml') || p.endsWith('Cargo.lock')).map(p => relative(root, p));
   const sources = hashes(inputs);
   const llbc = resolve(root, `.tools/llbc/${example.crate}.llbc`);
-  run('charon', ['cargo', '--preset', 'aeneas', '--hide-marker-traits', '--sysroot', 'default', '--dest-file', llbc, '--', '--offline', '--locked', '--lib'], resolve(root, example.rust));
+  run(tool('aeneas/charon'), ['cargo', '--preset', 'aeneas', '--hide-marker-traits', '--sysroot', 'default', '--dest-file', llbc, '--', '--offline', '--locked', '--lib'], resolve(root, example.rust));
   // Aeneas names its output after the crate; it is written aside and moved to Aeneas.lean.
   const out = resolve(root, `.tools/aeneas-out/${example.id}`);
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
-  run('aeneas', ['-backend', 'lean', '-emit-json', '-abort-on-error', '-no-progress-bar', '-dest', out, '-namespace', example.crate, llbc]);
+  run(tool('aeneas/aeneas'), ['-backend', 'lean', '-emit-json', '-abort-on-error', '-no-progress-bar', '-dest', out, '-namespace', example.crate, llbc]);
   assert.deepEqual(hashes(inputs), sources, `${example.id}: the Rust sources changed during extraction; extract again`);
   const generated = readdirSync(out).filter(name => name.endsWith('.lean'));
   assert.equal(generated.length, 1, `Expected one generated Lean file, found: ${generated}`);
