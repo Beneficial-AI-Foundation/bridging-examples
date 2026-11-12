@@ -208,15 +208,20 @@ export function discover(base = root, configs = examples(base)) {
     linkAtoms(example, declarations);
     const assumed = i => i.assumptions.length || (i.trait && i.hypotheses.length);
     example.items = example.items.filter(i => !i.external || i.spec.length || i.crypto.length || i.bridge.length || assumed(i));
+    const checked = names => names.some(n => example.declarations.some(d => d.name === n && isCheckedTheorem(d)));
     // Only functions need a spec; types and traits count in neither number.
     const functions = example.items.filter(i => i.category === 'functions');
     if (example.extraction === 'available') example.coverage = {
       atoms: example.items.length,
       functions: functions.length,
-      spec: functions.filter(i => i.spec.length || assumed(i)).length,
-      crypto: example.items.filter(i => i.crypto.length || assumed(i)).length,
-      bridge: example.items.filter(i => i.bridge.length || assumed(i)).length,
-      checkedBridge: example.items.filter(i => i.bridge.some(n => example.declarations.some(d => d.name === n && isCheckedTheorem(d)))).length,
+      // Linked declarations of any kind, then the atoms among them with a checked theorem. An
+      // assumption is not evidence; the atoms that have one are counted on their own.
+      spec: functions.filter(i => i.spec.length).length,
+      checkedSpec: functions.filter(i => checked(i.spec)).length,
+      crypto: example.items.filter(i => i.crypto.length).length,
+      bridge: example.items.filter(i => i.bridge.length).length,
+      checkedBridge: example.items.filter(i => checked(i.bridge)).length,
+      assumed: example.items.filter(i => assumed(i)).length,
     };
     return example;
   });
