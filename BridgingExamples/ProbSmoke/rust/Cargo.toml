@@ -1,0 +1,11 @@
+[package]
+name = "prob-smoke"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+rand = { version = "=0.9.2", default-features = false }
+
+[package.metadata.explorer]
+name = "Probabilistic Smoke"

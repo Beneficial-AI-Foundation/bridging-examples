@@ -1,6 +1,13 @@
 name = "bridgingExamples"
 version = "0.1.0"
-defaultTargets = ["BridgingExamples"]
+defaultTargets = ["BridgingExamples", "Common"]
+
+# Verso renders the Lean shown in the explorer. It comes first so that the versions of shared
+# dependencies are the ones VCVio and Mathlib pin.
+[[require]]
+name = "verso"
+git = "https://github.com/leanprover/verso.git"
+rev = "01a09f320122475119588526857a07d218aef600"
 
 [[require]]
 name = "VCVio"
@@ -13,8 +20,12 @@ git = "https://github.com/AeneasVerif/aeneas.git"
 rev = "da2b22e78d8fd5f076a902a5617c34038409fb79"
 subDir = "backends/lean"
 
+# One folder per example: the generated Aeneas.lean and the handwritten Spec, Crypto and Bridge.
 [[lean_lib]]
 name = "BridgingExamples"
+globs = ["BridgingExamples.+"]
 
+# Lean shared by the examples: proof lemmas and the explorer's metadata commands.
 [[lean_lib]]
-name = "Generated"
+name = "Common"
+globs = ["Common.+"]

@@ -1,0 +1,10 @@
+{
+  "crate": "smoke",
+  "sha256": {
+    "BridgingExamples/Smoke/rust/Cargo.lock": "94c8a92a1b3208b0bd307738e5406a2cbbefb836c4379f6b3a79a494c8966996",
+    "BridgingExamples/Smoke/rust/Cargo.toml": "8f0936aae48cee5e3fcfe13fb9ff5bf0b87422ba5091da879f0e5c5bcc52a58e",
+    "BridgingExamples/Smoke/rust/src/lib.rs": "0147f6c687ff4be9a7c3bcec2f8eaf359f515d46a1906775e92ddf88fc2c54c4",
+    "BridgingExamples/Smoke/Aeneas.lean": "7124c4f2df1bf254be13c95a91eb9902906511def24d0bb52545c4c1087ac59d",
+    "BridgingExamples/Smoke/translation.json": "867f1dd5fd6e5db17e1ab86ed614f816d5ade389d0ede5614ef9fe15506966b5"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "aeneas_version": "nightly-2026.10.26-da2b22e",
+  "charon_version": "0.1.299",
+  "crate": "byte_mask",
+  "functions": [
+    {
+      "def_id": 19,
+      "lean_name": "byte_mask.mask",
+      "lean_file": "ByteMask.lean",
+      "rust_name": "byte_mask::mask",
+      "is_local": true,
+      "source": { "file": "src/lib.rs", "begin_line": 6, "end_line": 10 },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 20,
+      "lean_name": "byte_mask.unmask",
+      "lean_file": "ByteMask.lean",
+      "rust_name": "byte_mask::unmask",
+      "is_local": true,
+      "source": { "file": "src/lib.rs", "begin_line": 13, "end_line": 15 },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    }
+  ],
+  "types": [],
+  "globals": [],
+  "trait_decls": [
+    {
+      "def_id": 5,
+      "lean_name": "byte_mask.rand_core.RngCore",
+      "lean_file": "ByteMask.lean",
+      "rust_name": "rand_core::RngCore",
+      "is_local": false,
+      "source": {
+        "file": "/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.9.5/src/lib.rs",
+        "begin_line": 130,
+        "end_line": 130
+      }
+    }
+  ],
+  "trait_impls": []
+}

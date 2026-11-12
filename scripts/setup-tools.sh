@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Install the pinned Charon, Aeneas and Rust nightly into .tools/, and fetch the examples' locked
+# Cargo dependencies for offline checks. Lean comes from elan and lean-toolchain.
 set -euo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/env.sh"
 cd "$BRIDGE_ROOT"
@@ -75,5 +77,9 @@ if [[ ! -x "$CARGO_HOME/bin/rustup" ]]; then
 fi
 rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal \
   --component rustc-dev --component rust-src
+
+for manifest in BridgingExamples/*/rust/Cargo.toml; do
+  cargo fetch --locked --manifest-path "$manifest"
+done
 
 echo 'Pinned extraction tools ready. Lean is selected by lean-toolchain.'

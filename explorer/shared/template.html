@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'">
+  <title>Bridging Examples Explorer</title>
+  <script id="template-entry">
+    location.replace(new URL("../index.html" + location.search + location.hash, location.href).href);
+  </script>
+  <style>/* BROWSER_STYLE */</style>
+</head>
+<body>
+  <!-- BROWSER_ICONS -->
+  <header class="topbar">
+    <h1><a id="home-link" href="#view=home" title="Overview">Bridging</a></h1>
+    <label class="example-picker"><span class="sr-only">Example</span><select id="example-picker" aria-label="Example"></select></label>
+    <label class="item-picker"><span class="sr-only">Selected Rust declaration</span><select id="item-picker"></select></label>
+    <button id="focus-declaration" class="icon-button" title="Focus selected declaration" aria-label="Focus selected declaration" aria-pressed="false" aria-controls="panes"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-focus"></use></svg></button>
+    <span class="bar-spacer"></span>
+    <details id="view-menu" class="view-menu">
+      <summary>View</summary>
+      <div class="view-options">
+        <label title="Show the Rust source alongside Aeneas and Crypto"><input id="show-rust" type="checkbox" checked> Rust column</label>
+        <label title="Expand or minimize the Aeneas panel"><input id="show-aeneas" type="checkbox"> Aeneas column</label>
+        <label title="Expand or minimize the functional specifications"><input id="show-spec" type="checkbox"> Spec column</label>
+        <label title="Expand or minimize the Crypto panel"><input id="show-crypto" type="checkbox"> Crypto column</label>
+        <label title="Expand or minimize correspondence proofs"><input id="show-bridge" type="checkbox"> Bridge column</label>
+        <label title="Include helper files and regression checks"><input id="show-support" type="checkbox"> Supporting files</label>
+        <label class="font-size">Font size<input id="font-size" type="number" min="10" max="18" value="12" aria-label="Code font size"></label>
+      </div>
+    </details>
+    <span class="coverage" title="Functions with a checked spec; atoms with a Crypto counterpart; atoms with a checked bridge theorem; atoms with an assumption"><span class="status-dot"></span><span id="check-status"></span></span>
+    <button id="provenance" title="Source files, toolchain versions, and model notes">Sources</button>
+  </header>
+  <div class="workspace">
+    <main aria-labelledby="item-title" aria-describedby="item-summary">
+      <h2 id="item-title" class="sr-only"></h2>
+      <p id="item-summary" class="sr-only"></p>
+      <div class="home" id="home" hidden></div>
+      <div class="panes" id="panes"></div>
+    </main>
+  </div>
+  <dialog id="provenance-dialog" aria-labelledby="provenance-title"><div class="dialog-head"><h2 id="provenance-title">Source provenance</h2><button id="close-dialog" title="Close provenance">Close</button></div><div id="provenance-body"></div></dialog>
+  <div id="toast" role="status" hidden></div>
+  <noscript>This source explorer requires JavaScript. The original Rust and Lean files remain available alongside this page.</noscript>
+  <script type="application/json" id="source-data"><!-- BROWSER_DATA --></script>
+  <!-- BROWSER_VERSO -->
+  <script>/* BROWSER_APP */</script>
+</body>
+</html>

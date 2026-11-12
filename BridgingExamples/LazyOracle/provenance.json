@@ -1,0 +1,10 @@
+{
+  "crate": "lazy_oracle",
+  "sha256": {
+    "BridgingExamples/LazyOracle/rust/Cargo.lock": "4445b870d427f3f6bbfaa4317c4b790e860814fdfb1037b1b53ae74970deb454",
+    "BridgingExamples/LazyOracle/rust/Cargo.toml": "6ad82b2f3134a5d3db6a060e57777ee6a85a90ccd4fbff67c7c773997d7f85e6",
+    "BridgingExamples/LazyOracle/rust/src/lib.rs": "606b94666cac611d525eb649dd71d1a5017ebe060aae3eb32792db6fa9486647",
+    "BridgingExamples/LazyOracle/Aeneas.lean": "98ed43dacea1f3fb49af00bb1ccda21effac8961fb0543ab4ffccada992c3d97",
+    "BridgingExamples/LazyOracle/translation.json": "b5ad9543ba94fab19512f1c6d5268b878d67fcbf078f6501f5f13a2d1bc2dccc"
+  }
+}
