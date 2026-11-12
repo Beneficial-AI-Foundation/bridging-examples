@@ -1,12 +1,21 @@
-import BridgingExamples.Smoke.Bridge
+import BridgingExamples.Smoke.Distributional.Bridge
+import BridgingExamples.Smoke.Direct.Bridge
 
-/-! The axioms of the Smoke theorems. `lake build` fails if either list changes, for example when
-a proof gains a `sorry` or a new axiom. -/
+/-! The axioms of the Smoke theorems. `lake build` fails if a list changes, for example when a
+proof gains a `sorry` or a new axiom. -/
 
-/-- info: 'smoke.Spec.identity_byte_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'smoke.Distributional.Spec.identity_byte_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
-#print axioms smoke.Spec.identity_byte_spec
+#print axioms smoke.Distributional.Spec.identity_byte_spec
 
-/-- info: 'smoke.Bridge.identity_byte_bridge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'smoke.Distributional.Bridge.identity_byte_bridge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
-#print axioms smoke.Bridge.identity_byte_bridge
+#print axioms smoke.Distributional.Bridge.identity_byte_bridge
+
+/-- info: 'smoke.Direct.Spec.identity_byte_spec' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs in
+#print axioms smoke.Direct.Spec.identity_byte_spec
+
+/-- info: 'smoke.Direct.Bridge.identity_byte_bridge' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs in
+#print axioms smoke.Direct.Bridge.identity_byte_bridge

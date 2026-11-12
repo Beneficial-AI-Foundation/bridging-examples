@@ -1,8 +1,10 @@
-import BridgingExamples.Smoke.Spec
-import BridgingExamples.Smoke.Crypto
+import BridgingExamples.Smoke.Distributional.Spec
+import BridgingExamples.Smoke.Distributional.Crypto
 import Common.Correspondence
 
-namespace smoke.Bridge
+/-! Equality in distribution with a model on U8, from a postcondition specification. -/
+
+namespace smoke.Distributional.Bridge
 
 open Aeneas.Std BridgingExamples
 
@@ -12,4 +14,4 @@ theorem identity_byte_bridge (x : U8) :
         pure (Result.ok y)) :=
   bridge_of_spec (Spec.identity_byte_spec x)
 
-end smoke.Bridge
+end smoke.Distributional.Bridge

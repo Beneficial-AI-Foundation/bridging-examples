@@ -1,6 +1,6 @@
 "use strict";
-// The explorer's lookups: examples and atoms, the declarations shown for an atom in each panel,
-// proof folding, URL parameters, and the messages of empty panels.
+// The explorer's lookups: examples, bridge methods and atoms, the declarations shown for an atom
+// in each panel, proof folding, URL parameters, and the messages of empty panels.
 const Explorer = {
   stages: ['rust', 'aeneas', 'spec', 'crypto', 'bridge'],
   // `files` shows whole files; `declaration` restricts each panel to the selected atom.
@@ -13,6 +13,17 @@ const Explorer = {
     return null;
   },
   example(bundle, id) { return bundle.examples.find(e => e.id === id) || bundle.examples.find(e => e.id === bundle.defaultExample) || bundle.examples[0]; },
+  // `example` as shown for one of its bridge methods, the first unless `id` names another: the
+  // shared files and declarations with those of the method, and the method's atoms and coverage.
+  // The files are the objects of `example`. An example without methods is returned as it is.
+  view(example, id) {
+    const method = example.methods?.find(m => m.id === id) || example.methods?.[0];
+    if (!method) return example;
+    const shown = entry => !entry.method || entry.method === method.id;
+    return { ...example, method, items: method.items, coverage: method.coverage,
+      files: Object.fromEntries(Object.entries(example.files).filter(([, file]) => shown(file))),
+      declarations: example.declarations.filter(shown) };
+  },
   // An atom by id, Lean name, alias (`item-aliases` in Cargo.toml) or unique suffix.
   item(example, id) {
     if (!id) return null;
@@ -123,9 +134,10 @@ const Explorer = {
     const files = this.files(example, stage, support);
     return files.includes(requested) ? requested : this.entries(example, item, stage).find(e => files.includes(e.file))?.file || files[0];
   },
-  // The example, atom and mode of a URL; old links (`properties`, `security`) open Bridge.
+  // The example, bridge method, atom and mode of a URL; old links (`properties`, `security`) open
+  // Bridge.
   normalize(bundle, params) {
-    const example = this.example(bundle, params.get('example'));
+    const example = this.view(this.example(bundle, params.get('example')), params.get('method'));
     const item = this.item(example, params.get('item'));
     const normalized = new URLSearchParams(params);
     if (params.has('security') && !params.has('bridge')) {
@@ -141,7 +153,7 @@ const Explorer = {
       normalized.set('bridgeFile', oldFile.replace(/Properties\.lean$/, 'Bridge.lean'));
     }
     for (const key of ['properties', 'propertiesFile', 'security', 'securityFile']) normalized.delete(key);
-    return { example: example.id, item: item?.id ?? null, mode: this.mode(params.get('mode')), params: normalized };
+    return { example: example.id, method: example.method?.id ?? null, item: item?.id ?? null, mode: this.mode(params.get('mode')), params: normalized };
   },
   // The message of a panel with nothing to show for `item`.
   pending(example, item, stage) {

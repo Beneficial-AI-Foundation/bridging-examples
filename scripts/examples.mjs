@@ -16,7 +16,8 @@ const order = ['Smoke', 'ProbSmoke', 'ByteMask', 'Commitment', 'ModularMasking',
 const rank = id => order.includes(id) ? order.indexOf(id) : order.length;
 
 /** An example is a folder `BridgingExamples/<Name>/` with a Rust crate in `rust/`. Its generated Lean is
- * `Aeneas.lean`; `Spec.lean`, `Crypto.lean`, `Bridge.lean` and other Lean files are handwritten. */
+ * `Aeneas.lean`; `Spec.lean`, `Crypto.lean`, `Bridge.lean` and other Lean files are handwritten.
+ * When it has several bridges, each is in a folder beside `rust/`, with its own `Bridge.lean`. */
 export function examples(base = root) {
   return readdirSync(resolve(base, 'BridgingExamples'), { withFileTypes: true }).filter(e => e.isDirectory())
     .filter(e => existsSync(resolve(base, 'BridgingExamples', e.name, 'rust/Cargo.toml'))).map(e => {

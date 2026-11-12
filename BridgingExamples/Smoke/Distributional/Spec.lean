@@ -1,6 +1,6 @@
 import BridgingExamples.Smoke.Aeneas
 
-namespace smoke.Spec
+namespace smoke.Distributional.Spec
 
 open Aeneas Aeneas.Std
 
@@ -8,4 +8,4 @@ open Aeneas Aeneas.Std
 theorem identity_byte_spec (x : U8) : identity_byte x ⦃ y => y = x ⦄ := by
   simp [identity_byte]
 
-end smoke.Spec
+end smoke.Distributional.Spec

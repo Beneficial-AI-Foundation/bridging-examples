@@ -10,6 +10,10 @@ stages below; most currently stop at Aeneas, and only Smoke has Spec, Crypto and
 - **Crypto**: cryptographic Lean models for the extracted functions, specified in VCVio.
 - **Bridge**: distributional equivalence of Aeneas and Crypto models, under assumed probabilistic specifications for externally called functions.
 
+An example may have several bridges, which can differ in Spec, Crypto and proof method. Each bridge
+is then in a folder of the example, and the explorer switches between them: Smoke has `Direct/`
+and `Distributional/`.
+
 ## Examples
 
 See [explorer](https://beneficial-ai-foundation.github.io/bridging-examples/).
