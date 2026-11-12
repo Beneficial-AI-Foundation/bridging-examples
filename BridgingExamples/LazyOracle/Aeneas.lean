@@ -21,26 +21,26 @@ set_option maxRecDepth 2048
 namespace lazy_oracle
 
 /-- Trait declaration: [lazy_oracle::ByteRng]
-    Source: 'src/lib.rs', lines 4:0-6:1
+    Source: 'src/lib.rs', lines 4:0-7:1
     Visibility: public -/
 structure ByteRng (Self : Type _) where
   next_u8 : Self → Result (Std.U8 × Self)
 
 /-- [lazy_oracle::LazyOracle]
-    Source: 'src/lib.rs', lines 8:0-11:1
+    Source: 'src/lib.rs', lines 10:0-13:1
     Visibility: public -/
 structure LazyOracle where
   false_value : Option Std.U8
   true_value : Option Std.U8
 
 /-- [lazy_oracle::{lazy_oracle::LazyOracle}::new]:
-    Source: 'src/lib.rs', lines 14:4-19:5
+    Source: 'src/lib.rs', lines 17:4-22:5
     Visibility: public -/
 def LazyOracle.new : Result LazyOracle := do
   ok { false_value := none, true_value := none }
 
 /-- [lazy_oracle::{lazy_oracle::LazyOracle}::query]:
-    Source: 'src/lib.rs', lines 21:4-39:5
+    Source: 'src/lib.rs', lines 25:4-43:5
     Visibility: public -/
 def LazyOracle.query
   {R : Type _} (ByteRngInst : ByteRng R) (self : LazyOracle) (key : Bool)
@@ -59,20 +59,20 @@ def LazyOracle.query
   | some value => ok (value, self, rng)
 
 /-- [lazy_oracle::TwoByteRng]
-    Source: 'src/lib.rs', lines 43:0-46:1
+    Source: 'src/lib.rs', lines 47:0-50:1
     Visibility: public -/
 structure TwoByteRng where
   next : Option Std.U8
   tail : Option Std.U8
 
 /-- [lazy_oracle::{lazy_oracle::TwoByteRng}::new]:
-    Source: 'src/lib.rs', lines 49:4-54:5
+    Source: 'src/lib.rs', lines 54:4-59:5
     Visibility: public -/
 def TwoByteRng.new (first : Std.U8) (second : Std.U8) : Result TwoByteRng := do
   ok { next := (some first), tail := (some second) }
 
 /-- [lazy_oracle::{impl lazy_oracle::ByteRng for lazy_oracle::TwoByteRng}::next_u8]:
-    Source: 'src/lib.rs', lines 58:4-67:5
+    Source: 'src/lib.rs', lines 63:4-72:5
     Visibility: public -/
 def TwoByteRng.Insts.Lazy_oracleByteRng.next_u8
   (self : TwoByteRng) : Result (Std.U8 × TwoByteRng) := do
@@ -81,7 +81,7 @@ def TwoByteRng.Insts.Lazy_oracleByteRng.next_u8
   | some value => ok (value, { next := self.tail, tail := none })
 
 /-- Trait implementation: [lazy_oracle::{impl lazy_oracle::ByteRng for lazy_oracle::TwoByteRng}]
-    Source: 'src/lib.rs', lines 57:0-68:1 -/
+    Source: 'src/lib.rs', lines 62:0-73:1 -/
 @[reducible]
 def TwoByteRng.Insts.Lazy_oracleByteRng : ByteRng TwoByteRng := {
   next_u8 := TwoByteRng.Insts.Lazy_oracleByteRng.next_u8

@@ -1,15 +1,15 @@
 {
   "aeneas_version": "nightly-2026.10.26-da2b22e",
   "charon_version": "0.1.299",
-  "crate": "etm_intro",
+  "crate": "etm",
   "functions": [
     {
       "def_id": 19,
-      "lean_name": "etm_intro.keygen",
-      "lean_file": "EtmIntro.lean",
-      "rust_name": "etm_intro::keygen",
+      "lean_name": "etm.keygen",
+      "lean_file": "Etm.lean",
+      "rust_name": "etm::keygen",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 22, "end_line": 32 },
+      "source": { "file": "src/lib.rs", "begin_line": 30, "end_line": 40 },
       "is_opaque": false,
       "can_fail": true,
       "can_diverge": false,
@@ -18,11 +18,11 @@
     },
     {
       "def_id": 20,
-      "lean_name": "etm_intro.encrypt",
-      "lean_file": "EtmIntro.lean",
-      "rust_name": "etm_intro::encrypt",
+      "lean_name": "etm.encrypt",
+      "lean_file": "Etm.lean",
+      "rust_name": "etm::encrypt",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 51, "end_line": 66 },
+      "source": { "file": "src/lib.rs", "begin_line": 66, "end_line": 80 },
       "is_opaque": false,
       "can_fail": true,
       "can_diverge": false,
@@ -31,11 +31,11 @@
     },
     {
       "def_id": 21,
-      "lean_name": "etm_intro.decrypt",
-      "lean_file": "EtmIntro.lean",
-      "rust_name": "etm_intro::decrypt",
+      "lean_name": "etm.decrypt",
+      "lean_file": "Etm.lean",
+      "rust_name": "etm::decrypt",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 68, "end_line": 84 },
+      "source": { "file": "src/lib.rs", "begin_line": 83, "end_line": 98 },
       "is_opaque": false,
       "can_fail": true,
       "can_diverge": false,
@@ -45,55 +45,55 @@
   ],
   "types": [
     {
-      "def_id": 8,
-      "lean_name": "etm_intro.Keys",
-      "lean_file": "EtmIntro.lean",
-      "rust_name": "etm_intro::Keys",
+      "def_id": 9,
+      "lean_name": "etm.Keys",
+      "lean_file": "Etm.lean",
+      "rust_name": "etm::Keys",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 17, "end_line": 20 }
+      "source": { "file": "src/lib.rs", "begin_line": 24, "end_line": 27 }
     },
     {
-      "def_id": 9,
-      "lean_name": "etm_intro.Ciphertext",
-      "lean_file": "EtmIntro.lean",
-      "rust_name": "etm_intro::Ciphertext",
+      "def_id": 10,
+      "lean_name": "etm.Ciphertext",
+      "lean_file": "Etm.lean",
+      "rust_name": "etm::Ciphertext",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 44, "end_line": 48 }
+      "source": { "file": "src/lib.rs", "begin_line": 59, "end_line": 63 }
     }
   ],
   "globals": [],
   "trait_decls": [
     {
       "def_id": 4,
-      "lean_name": "etm_intro.KeyRng",
-      "lean_file": "EtmIntro.lean",
-      "rust_name": "etm_intro::KeyRng",
+      "lean_name": "etm.KeyRng",
+      "lean_file": "Etm.lean",
+      "rust_name": "etm::KeyRng",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 8, "end_line": 10 }
+      "source": { "file": "src/lib.rs", "begin_line": 12, "end_line": 15 }
     },
     {
       "def_id": 5,
-      "lean_name": "etm_intro.NonceRng",
-      "lean_file": "EtmIntro.lean",
-      "rust_name": "etm_intro::NonceRng",
+      "lean_name": "etm.NonceRng",
+      "lean_file": "Etm.lean",
+      "rust_name": "etm::NonceRng",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 13, "end_line": 15 }
+      "source": { "file": "src/lib.rs", "begin_line": 18, "end_line": 21 }
     },
     {
       "def_id": 6,
-      "lean_name": "etm_intro.Cipher",
-      "lean_file": "EtmIntro.lean",
-      "rust_name": "etm_intro::Cipher",
+      "lean_name": "etm.Cipher",
+      "lean_file": "Etm.lean",
+      "rust_name": "etm::Cipher",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 34, "end_line": 37 }
+      "source": { "file": "src/lib.rs", "begin_line": 43, "end_line": 48 }
     },
     {
       "def_id": 7,
-      "lean_name": "etm_intro.Mac",
-      "lean_file": "EtmIntro.lean",
-      "rust_name": "etm_intro::Mac",
+      "lean_name": "etm.Mac",
+      "lean_file": "Etm.lean",
+      "rust_name": "etm::Mac",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 39, "end_line": 42 }
+      "source": { "file": "src/lib.rs", "begin_line": 51, "end_line": 56 }
     }
   ],
   "trait_impls": []

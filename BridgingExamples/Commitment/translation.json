@@ -9,7 +9,7 @@
       "lean_file": "Commitment.lean",
       "rust_name": "commitment::commit",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 21, "end_line": 29 },
+      "source": { "file": "src/lib.rs", "begin_line": 27, "end_line": 31 },
       "is_opaque": false,
       "can_fail": true,
       "can_diverge": false,
@@ -22,7 +22,7 @@
       "lean_file": "Commitment.lean",
       "rust_name": "commitment::verify",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 31, "end_line": 37 },
+      "source": { "file": "src/lib.rs", "begin_line": 34, "end_line": 36 },
       "is_opaque": false,
       "can_fail": true,
       "can_diverge": false,
@@ -37,7 +37,7 @@
       "lean_file": "Commitment.lean",
       "rust_name": "commitment::Opening",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 16, "end_line": 19 }
+      "source": { "file": "src/lib.rs", "begin_line": 21, "end_line": 24 }
     }
   ],
   "globals": [],
@@ -48,7 +48,7 @@
       "lean_file": "Commitment.lean",
       "rust_name": "commitment::ByteRng",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 8, "end_line": 10 }
+      "source": { "file": "src/lib.rs", "begin_line": 9, "end_line": 12 }
     },
     {
       "def_id": 5,
@@ -56,7 +56,7 @@
       "lean_file": "Commitment.lean",
       "rust_name": "commitment::ByteHash",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 12, "end_line": 14 }
+      "source": { "file": "src/lib.rs", "begin_line": 15, "end_line": 18 }
     }
   ],
   "trait_impls": []

@@ -1,5 +1,5 @@
 [package]
-name = "etm-intro"
+name = "etm"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -7,5 +7,3 @@ publish = false
 [package.metadata.explorer]
 name = "Encrypt then Mac"
 item-aliases = { encrypt_randomized = "encrypt" }
-
-[workspace]

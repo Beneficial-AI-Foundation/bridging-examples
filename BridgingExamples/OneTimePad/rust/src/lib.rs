@@ -6,16 +6,13 @@ pub type Block = [u8; 16];
 pub type Key = [u8; 16];
 
 /// Fill a 16-byte key with RNG output.
-pub fn sample_key<R: CryptoRng>(rng: &mut R) -> Key {
+pub fn keygen<R: CryptoRng>(rng: &mut R) -> Key {
     let mut key = [0u8; 16];
     rng.fill_bytes(&mut key);
     key
 }
 
-pub fn keygen<R: CryptoRng>(rng: &mut R) -> Option<Key> {
-    Some(sample_key(rng))
-}
-
+/// XOR the key into the message, byte by byte.
 pub fn encrypt(key: &Key, message: &Block) -> Block {
     let mut ciphertext = [0u8; 16];
     let mut i = 0;
@@ -26,6 +23,7 @@ pub fn encrypt(key: &Key, message: &Block) -> Block {
     ciphertext
 }
 
+/// XOR the key into the ciphertext, by calling [`encrypt`].
 pub fn decrypt(key: &Key, ciphertext: &Block) -> Block {
     encrypt(key, ciphertext)
 }

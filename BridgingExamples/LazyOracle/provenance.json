@@ -3,8 +3,8 @@
   "sha256": {
     "BridgingExamples/LazyOracle/rust/Cargo.lock": "4445b870d427f3f6bbfaa4317c4b790e860814fdfb1037b1b53ae74970deb454",
     "BridgingExamples/LazyOracle/rust/Cargo.toml": "6ad82b2f3134a5d3db6a060e57777ee6a85a90ccd4fbff67c7c773997d7f85e6",
-    "BridgingExamples/LazyOracle/rust/src/lib.rs": "d714f21aaafe77055944d67b376823ae39655ea602e7e6354edd9cef6ad9cd42",
-    "BridgingExamples/LazyOracle/Aeneas.lean": "95a47701bb082b36ce1aed9d75d4a387837aaf7a90e8739938f3090d2854eaaf",
-    "BridgingExamples/LazyOracle/translation.json": "d399d5d37fb3137bf02152bc23c96773c7df96bed9073c59e90489a7e91cff03"
+    "BridgingExamples/LazyOracle/rust/src/lib.rs": "606b94666cac611d525eb649dd71d1a5017ebe060aae3eb32792db6fa9486647",
+    "BridgingExamples/LazyOracle/Aeneas.lean": "98ed43dacea1f3fb49af00bb1ccda21effac8961fb0543ab4ffccada992c3d97",
+    "BridgingExamples/LazyOracle/translation.json": "b5ad9543ba94fab19512f1c6d5268b878d67fcbf078f6501f5f13a2d1bc2dccc"
   }
 }

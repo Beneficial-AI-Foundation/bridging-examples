@@ -38,10 +38,10 @@ structure rand_core.RngCore (Self : Type _) where
 structure rand_core.CryptoRng (Self : Type _) where
   RngCoreInst : rand_core.RngCore Self
 
-/-- [one_time_pad::sample_key]:
+/-- [one_time_pad::keygen]:
     Source: 'src/lib.rs', lines 9:0-13:1
     Visibility: public -/
-def sample_key
+def keygen
   {R : Type _} (rand_coreCryptoRngInst : rand_core.CryptoRng R) (rng : R) :
   Result ((Array Std.U8 16#usize) × R)
   := do
@@ -51,18 +51,8 @@ def sample_key
   let key1 := to_slice_mut_back s1
   ok (key1, rng1)
 
-/-- [one_time_pad::keygen]:
-    Source: 'src/lib.rs', lines 15:0-17:1
-    Visibility: public -/
-def keygen
-  {R : Type _} (rand_coreCryptoRngInst : rand_core.CryptoRng R) (rng : R) :
-  Result ((Option (Array Std.U8 16#usize)) × R)
-  := do
-  let (a, rng1) ← sample_key rand_coreCryptoRngInst rng
-  ok (some a, rng1)
-
 /-- [one_time_pad::encrypt]: loop body 0:
-    Source: 'src/lib.rs', lines 22:4-25:5
+    Source: 'src/lib.rs', lines 19:4-22:5
     Visibility: public -/
 @[rust_loop_body]
 def encrypt_loop.body
@@ -82,7 +72,7 @@ def encrypt_loop.body
   else ok (done ciphertext)
 
 /-- [one_time_pad::encrypt]: loop 0:
-    Source: 'src/lib.rs', lines 22:4-25:5
+    Source: 'src/lib.rs', lines 19:4-22:5
     Visibility: public -/
 @[rust_loop]
 def encrypt_loop
@@ -95,7 +85,7 @@ def encrypt_loop
     (ciphertext, i)
 
 /-- [one_time_pad::encrypt]:
-    Source: 'src/lib.rs', lines 19:0-27:1
+    Source: 'src/lib.rs', lines 16:0-24:1
     Visibility: public -/
 def encrypt
   (key : Array Std.U8 16#usize) (message : Array Std.U8 16#usize) :
@@ -105,7 +95,7 @@ def encrypt
   encrypt_loop key message ciphertext 0#usize
 
 /-- [one_time_pad::decrypt]:
-    Source: 'src/lib.rs', lines 29:0-31:1
+    Source: 'src/lib.rs', lines 27:0-29:1
     Visibility: public -/
 def decrypt
   (key : Array Std.U8 16#usize) (ciphertext : Array Std.U8 16#usize) :

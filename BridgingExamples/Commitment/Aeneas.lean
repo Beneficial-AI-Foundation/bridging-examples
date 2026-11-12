@@ -21,26 +21,26 @@ set_option maxRecDepth 2048
 namespace commitment
 
 /-- Trait declaration: [commitment::ByteRng]
-    Source: 'src/lib.rs', lines 8:0-10:1
+    Source: 'src/lib.rs', lines 9:0-12:1
     Visibility: public -/
 structure ByteRng (Self : Type _) where
   next_u8 : Self → Result (Std.U8 × Self)
 
 /-- Trait declaration: [commitment::ByteHash]
-    Source: 'src/lib.rs', lines 12:0-14:1
+    Source: 'src/lib.rs', lines 15:0-18:1
     Visibility: public -/
 structure ByteHash (Self : Type _) where
   hash : Self → Std.U8 → Std.U8 → Result Std.U8
 
 /-- [commitment::Opening]
-    Source: 'src/lib.rs', lines 16:0-19:1
+    Source: 'src/lib.rs', lines 21:0-24:1
     Visibility: public -/
 structure Opening where
   message : Std.U8
   salt : Std.U8
 
 /-- [commitment::commit]:
-    Source: 'src/lib.rs', lines 21:0-29:1
+    Source: 'src/lib.rs', lines 27:0-31:1
     Visibility: public -/
 def commit
   {H : Type _} {R : Type _} (ByteHashInst : ByteHash H) (ByteRngInst : ByteRng
@@ -52,7 +52,7 @@ def commit
   ok ((commitment, { message, salt }), rng1)
 
 /-- [commitment::verify]:
-    Source: 'src/lib.rs', lines 31:0-37:1
+    Source: 'src/lib.rs', lines 34:0-36:1
     Visibility: public -/
 def verify
   {H : Type _} (ByteHashInst : ByteHash H) (hash : H) (commitment : Std.U8)

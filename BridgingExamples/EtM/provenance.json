@@ -1,10 +1,10 @@
 {
-  "crate": "etm_intro",
+  "crate": "etm",
   "sha256": {
-    "BridgingExamples/EtM/rust/Cargo.lock": "53f0eaf8736587090e82c5f3aaeb4e63de115eb776e1c9ca508b9c843925c468",
-    "BridgingExamples/EtM/rust/Cargo.toml": "e1191a935c5f90377ceaa21ecf182edeab0616b596871c7d19eb52b35f4fdff9",
-    "BridgingExamples/EtM/rust/src/lib.rs": "02b9a9373bca1cb9ca4e29edec9726cecb43954bc70992e7ada6e3d50445c6b4",
-    "BridgingExamples/EtM/Aeneas.lean": "64ba91f88c1f9757b7118569e78509eddcf04e74f17b73032564fd16c7301b17",
-    "BridgingExamples/EtM/translation.json": "c14975fc2b4cf662bb03239e6629396f5cae53e6432da157d6e4ee9b69028ad3"
+    "BridgingExamples/EtM/rust/Cargo.lock": "898831eac1e1992fbd1f9495de59457f3a5c982d6c55ba0eceb19c0468acabd0",
+    "BridgingExamples/EtM/rust/Cargo.toml": "4896205611b34e7305b7e6840027d12f5aff8bf18dede440974954abec8d02ed",
+    "BridgingExamples/EtM/rust/src/lib.rs": "c65c0be13a191454c9668abb6774940e6430d61cf9cc8dcd0745da0a17c73c73",
+    "BridgingExamples/EtM/Aeneas.lean": "9a60fa4a2df8d8e1769d530d0d4668a08f74bb42e1f5c70535149f06911c4299",
+    "BridgingExamples/EtM/translation.json": "a1cd0967db22901762d0322025ea1e85982a5678c92fee3f2be9ff4abfd28875"
   }
 }
