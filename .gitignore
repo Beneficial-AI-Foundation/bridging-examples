@@ -1,6 +1,8 @@
 /.lake/
 /.tools/
 /BridgingExamples/*/rust/target/
+# The explorer page is built by scripts/check.sh and published by CI, not committed
+/explorer/site/
 *.llbc
 *.log
 

@@ -1,4 +1,4 @@
-// Write the explorer page and its manifest to explorer/site/, or with --check compare the page.
+// Write the explorer page and its manifest to explorer/site/, which CI publishes and git ignores.
 // Run after explorer/export.mjs and explorer/verso.mjs.
 import assert from 'node:assert/strict';
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -49,12 +49,9 @@ export const buildHtml = () => { const data = buildData(); return renderHtml(dat
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const data = buildData(), verso = buildVerso(data);
   const html = renderHtml(data, verso);
-  if (process.argv.includes('--check')) assert.equal(read('explorer/site/index.html'), html, 'Explorer is stale');
-  else {
-    mkdirSync(new URL('site/', import.meta.url), { recursive: true });
-    writeFileSync(new URL('site/index.html', import.meta.url), html);
-    writeFileSync(new URL('site/manifest.json', import.meta.url), JSON.stringify(data, null, 2) + '\n');
-  }
+  mkdirSync(new URL('site/', import.meta.url), { recursive: true });
+  writeFileSync(new URL('site/index.html', import.meta.url), html);
+  writeFileSync(new URL('site/manifest.json', import.meta.url), JSON.stringify(data, null, 2) + '\n');
   console.log(`${data.examples.length} examples; extraction, metadata, and source hashes agree.` +
     (verso ? ` Verso renders ${Object.keys(verso.files).length} Lean files.` : ''));
 }

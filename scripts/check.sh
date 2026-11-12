@@ -13,4 +13,3 @@ node scripts/extract.mjs --check
 node explorer/export.mjs
 node explorer/verso.mjs
 node explorer/build.mjs
-node explorer/build.mjs --check
