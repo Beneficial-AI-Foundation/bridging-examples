@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 import { discover } from './discover.mjs';
 import { read, root } from '../scripts/examples.mjs';
 import { renderHtml } from './render.mjs';
@@ -38,7 +39,17 @@ export function buildVerso(data) {
   // start of Verso's script becomes a function that the explorer calls after each draw.
   const start = 'window.onload = async () => {', highlighting = asset('highlighting.js');
   assert(highlighting.includes(start), 'Verso changed how its hover script starts');
-  const script = [asset('popper.js'), asset('tippy.js'), asset('marked.js'),
+  // marked reads no HTML, so a tag in a docstring is shown as text. A link stays a link only when
+  // it leads to a web page or a mail address.
+  const harden = `marked.use({
+  tokenizer: { html: () => undefined, tag: () => undefined },
+  renderer: { link(token) { return /^(https?:\\/\\/|mailto:)/i.test(token.href) ? false : this.parser.parseInline(token.tokens); } }
+});`;
+  // Fail the build if a Verso or marked upgrade makes the setting above stop working.
+  const probe = '<img src=x onerror=1> <pre><img/src/onerror=1></pre> [x](javascript:1)\n\n<div onclick=1>';
+  assert(!/<(img|pre|div|a)\b/.test(runInNewContext(`${asset('marked.js')}\n;\n${harden}\n;\nmarked.parse(${JSON.stringify(probe)})`)),
+    'marked in Verso changed: HTML in a docstring would reach the page');
+  const script = [asset('popper.js'), asset('tippy.js'), asset('marked.js'), harden,
     highlighting.replace(start, 'window.versoInit = async () => {')].join('\n;\n');
   assert(!/<\/script/i.test(script), 'A Verso script would end the inline script early');
   return { files, docs, style: asset('highlighting.css') + asset('tippy-border.css'), script };
