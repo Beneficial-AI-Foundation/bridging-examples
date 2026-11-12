@@ -10,6 +10,13 @@ assumptions. It finds them by name (`crate.Spec.f_spec`, `crate.Crypto.f`,
 `@[spec_for a…]`, `@[crypto_for a…]`, `@[bridge_for a…]` and `@[assumption_for a…]` links the
 declaration to the atoms `a…`.
 
+An example with several bridges has one folder per bridge, `BridgingExamples/<Example>/<Method>/`,
+which holds a `Bridge.lean`, and the names in it have one more namespace:
+`crate.<Method>.Bridge.f_bridge`. The other files, beside `Aeneas.lean` or in a folder without a
+`Bridge.lean`, are shared by the bridges that have no file of that name: a bridge folder with its
+own `Spec.lean` or `Crypto.lean` uses that file in place of the shared one. The first line of the
+module docstring of `<Method>/Bridge.lean` describes the method.
+
 `explorer/export.mjs` runs `#export_explorer "path"`, which writes every declaration of the
 `BridgingExamples` and `Common` modules to a JSON file, with its source lines, type, axioms and
 links. The explorer page is generated from that file.

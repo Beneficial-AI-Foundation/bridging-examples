@@ -1,6 +1,6 @@
 // Optional visual QA. Run only in an environment with permitted browser access.
-// Checks selection, focus and resizing of explorer/site/index.html at three widths in Playwright
-// (ETM_PLAYWRIGHT_MODULE locates it); screenshots go to .tools/explorer-qa/.
+// Checks selection, bridge methods, focus and resizing of explorer/site/index.html at three
+// widths in Playwright (ETM_PLAYWRIGHT_MODULE locates it); screenshots go to .tools/explorer-qa/.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -34,6 +34,15 @@ try {
         for (const item of example.items) {
           await page.locator('#item-picker').selectOption(item.id);
           assert(await page.locator('#pane-body-aeneas .focused').count() > 0);
+        }
+        // Each bridge method shows its own Bridge.lean and keeps the selected atom.
+        assert.equal(await page.locator('.method-picker').isVisible(), example.methods.length > 1);
+        if (example.methods.length > 1) for (const method of example.methods) {
+          const selected = await page.locator('#item-picker').inputValue();
+          await page.locator('#method-picker').selectOption(method.id);
+          assert.equal(await page.locator('[data-source="bridge"]').inputValue(), `${example.dir}/${method.id}/Bridge.lean`);
+          assert(new URL(await page.url()).hash.includes(`method=${method.id}`));
+          if (method.items.some(i => i.id === selected)) assert.equal(await page.locator('#item-picker').inputValue(), selected);
         }
         await page.locator('#focus-declaration').click();
         assert.equal(await page.locator('#focus-declaration').getAttribute('aria-pressed'), 'true');

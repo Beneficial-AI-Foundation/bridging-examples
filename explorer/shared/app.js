@@ -1,5 +1,5 @@
 // The explorer page: the overview and the five panels, drawn from the embedded data, with the
-// state (example, atom, panels, widths, files) kept in the URL hash.
+// state (example, bridge method, atom, panels, widths, files) kept in the URL hash.
 (() => {
 'use strict';
 /* PANEL_STATE */
@@ -8,7 +8,8 @@ const bundle = JSON.parse(document.getElementById('source-data').textContent);
 const $ = s => document.querySelector(s);
 const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const titles = { rust:'Rust', aeneas:'Aeneas', spec:'Spec', crypto:'Crypto', bridge:'Bridge' };
-// `data`: the example shown; `item`: the selected atom; `files`: the file shown in each panel.
+// `data`: the example shown, as its selected bridge method sees it; `item`: the selected atom;
+// `files`: the file shown in each panel.
 let data, item, home = false, state = {}, files = {}, drag = null;
 const widths = new Map();
 const openProofs = new Set();
@@ -20,9 +21,9 @@ function load() {
   const params = new URLSearchParams(location.hash.slice(1));
   home = params.get('view') === 'home' || (!params.has('example') && !bundle.defaultExample);
   const selected = Explorer.normalize(bundle, params);
-  data = Explorer.example(bundle, selected.example);
+  data = Explorer.view(Explorer.example(bundle, selected.example), selected.method);
   item = Explorer.item(data, selected.item);
-  state = { example:data.id, item:item?.id ?? '', mode:item ? selected.mode : 'files', support:params.get('support') === '1', font:Math.min(18, Math.max(10, Number(params.get('font')) || 12)),
+  state = { example:data.id, method:data.method?.id ?? '', item:item?.id ?? '', mode:item ? selected.mode : 'files', support:params.get('support') === '1', font:Math.min(18, Math.max(10, Number(params.get('font')) || 12)),
     ...Panels.read(selected.params) };
   widths.set(Panels.signature(state), Panels.readWeights(state, selected.params.get('widths')));
   for (const stage of Explorer.stages) files[stage] = Explorer.file(data, item, stage, selected.params.get(`${stage}File`), state.support);
@@ -167,14 +168,20 @@ function wireResize() {
   }
 }
 // Draws the page from the state, then attaches the handlers of the new panels. Each panel scrolls
-// to the selected atom, or keeps its position when `preserveScroll` is set.
+// to the selected atom, or keeps its position when `preserveScroll` is true or lists the panel.
 function render(preserveScroll = false) {
   const scroll = new Map(Explorer.stages.map(stage => [stage, $('#pane-body-'+stage)?.scrollTop]));
+  const keeps = stage => preserveScroll === true || (Array.isArray(preserveScroll) && preserveScroll.includes(stage));
   endDrag(true);
   document.title=`${data.name} - Bridging Examples`;
   $('#home').hidden=!home; $('#panes').hidden=home; document.body.classList.toggle('at-home',home);
   $('#example-picker').value=home?'':data.id;
   if(home){document.title='Bridging Examples';return;}
+  const methods=data.methods||[];
+  $('.method-picker').hidden=methods.length<2;
+  $('#method-picker').innerHTML=methods.map(m=>`<option value="${esc(m.id)}" title="${esc(m.description)}">${esc(m.name)}</option>`).join('');
+  $('#method-picker').value=data.method?.id ?? '';
+  $('#method-picker').title=data.method?.description||'Bridge method';
   $('#item-picker').innerHTML=`<option value="">Declarations (${data.items.length})</option>`+data.items.map(i=>`<option value="${esc(i.id)}">${esc(i.name)}</option>`).join('');
   $('#item-picker').value=item?.id ?? '';
   $('#item-title').textContent=item?.name ?? data.name;
@@ -232,20 +239,32 @@ function render(preserveScroll = false) {
     panel.querySelectorAll('.line').forEach(line=>line.classList.toggle('active-addition',+line.dataset.line>=d.start&&+line.dataset.line<=d.end));
   });
   wireResize();resize();bindVerso();
-  if(state.mode==='files')for(const stage of active){const first=ranges(stage).find(r=>r.file===files[stage]);const panel=$('#pane-body-'+stage);const line=first&&panel?.querySelector(`[data-line="${first.start}"]`);const target=line;if(preserveScroll&&scroll.get(stage)!=null)panel.scrollTop=scroll.get(stage);else if(target)panel.scrollTop=Math.max(0,target.offsetTop-panel.offsetTop-45);}
+  if(state.mode==='files')for(const stage of active){const first=ranges(stage).find(r=>r.file===files[stage]);const panel=$('#pane-body-'+stage);const line=first&&panel?.querySelector(`[data-line="${first.start}"]`);const target=line;if(keeps(stage)&&scroll.get(stage)!=null)panel.scrollTop=scroll.get(stage);else if(target)panel.scrollTop=Math.max(0,target.offsetTop-panel.offsetTop-45);}
 }
 // The Sources dialog: revision, assumptions, coverage, tool versions and file hashes.
 function provenance() {
   const source = f => data.repository && data.revision && !data.dirty
     ? `<a href="${esc(data.repository+'/blob/'+data.revision+'/'+f.path.split('/').map(encodeURIComponent).join('/'))}" target="_blank" rel="noopener">${esc(f.path)}</a>` : esc(f.path);
-  $('#provenance-body').innerHTML=`<p>Revision ${esc(data.revision||'unrecorded')}${data.dirty?' + local changes':''}. Spec and Bridge theorems take the assumptions listed below as explicit hypotheses; the only axioms are the opaque function symbols recorded by Aeneas. Assumptions are stated contracts, not verified library implementations.</p><p>${data.declarations.filter(d=>d.status==='assumption').map(d=>esc(d.name)).join('<br>')}</p><p>${data.coverage?`${data.coverage.checkedSpec} of ${data.coverage.functions} functions have a checked spec, and ${data.coverage.checkedBridge} of ${data.coverage.atoms} atoms a checked bridge theorem; ${data.coverage.assumed} atoms have an assumption.`:'Atom coverage is unknown until extraction.'}</p><p>${esc(bundle.lean)}${data.versions?` · Aeneas ${esc(data.versions.aeneas)} · Charon ${esc(data.versions.charon)}`:''}</p><p>${(bundle.references||[]).map(r=>`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.path)}</a>`).join('<br>')}</p><table class="provenance-table">${Object.values(data.files).map(f=>`<tr><th>${esc(f.stage)}</th><td>${source(f)}<span class="hash">SHA-256 ${f.sha256}</span></td></tr>`).join('')}</table>${data.external?.length?`<h3>External boundaries</h3><ul>${data.external.map(d=>`<li>${esc(d.name)} (${esc(d.category)})</li>`).join('')}</ul>`:''}`;
+  $('#provenance-body').innerHTML=`<p>Revision ${esc(data.revision||'unrecorded')}${data.dirty?' + local changes':''}. Spec and Bridge theorems take the assumptions listed below as explicit hypotheses; the only axioms are the opaque function symbols recorded by Aeneas. Assumptions are stated contracts, not verified library implementations.</p>${data.method?`<p>Bridge method: ${esc(data.method.name)}${data.method.description?`. ${esc(data.method.description)}`:''}</p>`:''}<p>${data.declarations.filter(d=>d.status==='assumption').map(d=>esc(d.name)).join('<br>')}</p><p>${data.coverage?`${data.coverage.checkedSpec} of ${data.coverage.functions} functions have a checked spec, and ${data.coverage.checkedBridge} of ${data.coverage.atoms} atoms a checked bridge theorem; ${data.coverage.assumed} atoms have an assumption.`:'Atom coverage is unknown until extraction.'}</p><p>${esc(bundle.lean)}${data.versions?` · Aeneas ${esc(data.versions.aeneas)} · Charon ${esc(data.versions.charon)}`:''}</p><p>${(bundle.references||[]).map(r=>`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.path)}</a>`).join('<br>')}</p><table class="provenance-table">${Object.values(data.files).map(f=>`<tr><th>${esc(f.stage)}</th><td>${source(f)}<span class="hash">SHA-256 ${f.sha256}</span></td></tr>`).join('')}</table>${data.external?.length?`<h3>External boundaries</h3><ul>${data.external.map(d=>`<li>${esc(d.name)} (${esc(d.category)})</li>`).join('')}</ul>`:''}`;
   $('#provenance-dialog').showModal();
 }
 // The controls outside the panels.
 $('#example-picker').innerHTML='<option value="">Overview</option>'+bundle.examples.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
 $('#example-picker').onchange=e=>{
   if(!e.target.value){location.hash='view=home';return;}
-  home=false;data=Explorer.example(bundle,e.target.value);state.example=data.id;select(null);
+  home=false;data=Explorer.view(Explorer.example(bundle,e.target.value));state.example=data.id;state.method=data.method?.id ?? '';select(null);
+};
+// Switches the bridge method and keeps the selected atom. A panel moves to the file that holds the
+// atom's declarations in the new method; a panel whose file stays keeps its scroll position.
+$('#method-picker').onchange=e=>{
+  const before={...files};
+  data=Explorer.view(Explorer.example(bundle,state.example),e.target.value);state.method=data.method?.id ?? '';
+  item=Explorer.item(data,state.item);state.item=item?.id ?? '';if(!item)state.mode='files';
+  for(const stage of Explorer.stages){
+    const entries=Explorer.entries(data,item,stage);
+    files[stage]=Explorer.file(data,item,stage,entries.length&&!entries.some(r=>r.file===files[stage])?null:files[stage],state.support);
+  }
+  save();render(Explorer.stages.filter(stage=>files[stage]===before[stage]));
 };
 $('#home').innerHTML=overview();
 $('#item-picker').onchange=e=>select(e.target.value);

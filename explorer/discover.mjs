@@ -1,5 +1,5 @@
-// The explorer data of each example: its files by panel, its atoms, and the declarations linked to
-// each atom. Every file must match its recorded hash.
+// The explorer data of each example: its files by panel, its bridge methods, its atoms, and the
+// declarations linked to each atom. Every file must match its recorded hash.
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, relative, basename } from 'node:path';
@@ -28,7 +28,8 @@ function counterpartSuffixes(atom, crate) {
 /** Links each atom `f` to its specs, Crypto counterpart, bridge theorems and assumptions, by
  * attribute or by name (`crate.Spec.f_spec`, `crate.Crypto.f`, `crate.Bridge.f_bridge`,
  * `crate.Spec.f_assumption`, `crate.Bridge.f_assumption`), and to the assumptions its theorems
- * take as hypotheses. */
+ * take as hypotheses. For the bridge method `example.method`, a name is tried under
+ * `crate.<Method>` before `crate`, where the shared files declare it. */
 export function linkAtoms(example, declarations) {
   const allNames = new Set(declarations.map(d => d.name));
   const atoms = example.items;
@@ -42,12 +43,16 @@ export function linkAtoms(example, declarations) {
   }
   const inferred = [];
   const namespaces = { spec: 'Spec', crypto: 'Crypto', bridge: 'Bridge' };
+  const prefixes = example.method ? [`${example.crate}.${example.method}`, example.crate] : [example.crate];
   function matching(atom, role, candidates, suffix = '', namespace = namespaces[role]) {
-    const names = counterpartSuffixes(atom, example.crate)
-      .map(name => `${example.crate}.${namespace}.${name}${suffix}`);
     const eligible = candidates.filter(d => !d.links.some(l => l.role === role));
-    const exact = eligible.filter(d => d.name === names[0]);
-    const matches = exact.length ? exact : eligible.filter(d => names.slice(1).includes(d.name));
+    let matches = [];
+    for (const prefix of prefixes) {
+      const names = counterpartSuffixes(atom, example.crate).map(name => `${prefix}.${namespace}.${name}${suffix}`);
+      const exact = eligible.filter(d => d.name === names[0]);
+      matches = exact.length ? exact : eligible.filter(d => names.slice(1).includes(d.name));
+      if (matches.length) break;
+    }
     assert(matches.length <= 1, `Ambiguous ${role} counterparts for ${atom.leanName}; add an explicit annotation`);
     for (const decl of matches) inferred.push({ atom, role, name: decl.name });
     return matches;
@@ -59,7 +64,9 @@ export function linkAtoms(example, declarations) {
     const taggedSpecs = specs.filter(d => d.links.some(l => l.role === 'spec' && l.targets.includes(atom.leanName)));
     atom.spec = [...taggedSpecs, ...matching(atom, 'spec', specs, '_spec')].map(d => d.name);
     const counterparts = example.declarations.filter(d => d.stage === 'crypto');
-    const tagged = counterparts.filter(d => d.links.some(l => l.role === 'crypto' && l.targets.includes(atom.leanName)));
+    const everyTagged = counterparts.filter(d => d.links.some(l => l.role === 'crypto' && l.targets.includes(atom.leanName)));
+    // A counterpart tagged in the method's folder replaces one tagged in a shared file.
+    const tagged = everyTagged.some(d => d.method) ? everyTagged.filter(d => d.method) : everyTagged;
     atom.crypto = (tagged.length ? tagged : matching(atom, 'crypto', counterparts)).map(d => d.name);
     assert(atom.crypto.length <= 1, `Ambiguous Crypto counterparts for ${atom.leanName}`);
     const bridges = example.declarations.filter(d => d.stage === 'bridge' && !isAssumption(d));
@@ -113,11 +120,11 @@ export function discover(base = root, configs = examples(base)) {
       revision: check?.revision, dirty: check?.dirty, repository: check?.repository };
     const crateDoc = `${config.rust}/src/lib.rs`;
     example.description = existsSync(resolve(base, crateDoc)) ? read(crateDoc).match(/^\/\/! ?(.+)$/m)?.[1] || '' : '';
-    function file(p, stage, support = false) {
+    function file(p, stage, support = false, method = null) {
       if (!example.files[p]) {
         const text = read(p);
         if (stage !== 'rust') assert.equal(check?.sha256[p], hash(text), `Unchecked Lean file: ${p}; run explorer/export.mjs`);
-        example.files[p] = { path: p, stage, support, text, sha256: hash(text), language: p.endsWith('.rs') ? 'rust' : 'lean' };
+        example.files[p] = { path: p, stage, support, method, text, sha256: hash(text), language: p.endsWith('.rs') ? 'rust' : 'lean' };
       }
       return p;
     }
@@ -189,10 +196,22 @@ export function discover(base = root, configs = examples(base)) {
         example.items.splice(owner < 0 ? example.items.length : owner + 1, 0, ...methods);
       }
     } else assert(!generated.length, `Incomplete extraction: ${config.id} has Lean files but no translation.json`);
-    for (const p of walk(resolve(base, config.dir)).filter(p => p.endsWith('.lean') && relative(base, p) !== config.aeneas)) {
+    // A folder of the example that holds a Bridge.lean is a bridge method, and the handwritten
+    // files in it are its own. The other files, beside Aeneas.lean or in a folder without a
+    // Bridge.lean, are shared by the methods that have no file of that name.
+    const handwritten = walk(resolve(base, config.dir)).filter(p => p.endsWith('.lean') && relative(base, p) !== config.aeneas);
+    const below = p => relative(resolve(base, config.dir), p).split('/');
+    const bridgeFolders = new Set(handwritten.map(below).filter(parts => parts.length === 2 && parts[1] === 'Bridge.lean').map(parts => parts[0]));
+    for (const p of handwritten) {
       const filename = basename(p, '.lean');
       const stage = filename === 'Spec' ? 'spec' : filename === 'Crypto' ? 'crypto' : 'bridge';
-      file(relative(base, p), stage, !['Spec', 'Crypto', 'Bridge'].includes(filename));
+      const support = !['Spec', 'Crypto', 'Bridge'].includes(filename);
+      const [folder, ...rest] = below(p);
+      const method = rest.length && bridgeFolders.has(folder) ? folder : null;
+      // An incomplete bridge folder is reported, not shown to the other methods as shared files.
+      assert(support || method || !rest.length,
+        `${config.dir}/${folder} holds ${rest.join('/')} but no Bridge.lean of its own; only a bridge folder holds a Spec.lean, Crypto.lean or Bridge.lean`);
+      file(relative(base, p), stage, support, method);
     }
     for (const d of declarations) {
       const path = `${d.module.replaceAll('.', '/')}.lean`;
@@ -201,30 +220,51 @@ export function discover(base = root, configs = examples(base)) {
       // Skip declarations generated from a parent: same range, or Aeneas's `step` companion.
       if (declarations.some(parent => parent.name !== d.name && d.name.startsWith(parent.name + '.') && parent.module === d.module &&
         (parent.start === d.start && parent.end === d.end || d.name.endsWith('.mvcgen_spec')))) continue;
-      example.declarations.push({ ...d, file: path, stage: source.stage, ...declarationEvidence(d, opaqueFunctions) });
+      example.declarations.push({ ...d, file: path, stage: source.stage, method: source.method, ...declarationEvidence(d, opaqueFunctions) });
     }
     example.declarations.sort((a,b) => a.file.localeCompare(b.file) || a.start-b.start || a.name.localeCompare(b.name));
     if (!example.items.length) example.items.push({ id: 'source', name: 'Source files', category: 'Rust only',
       rust: { file: Object.keys(example.files).find(p => p.endsWith('/src/lib.rs')) || Object.keys(example.files)[0], start: 1 },
       aeneas: null, spec: [], crypto: [], bridge: [], assumptions: [], hypotheses: [] });
-    linkAtoms(example, declarations);
-    const assumed = i => i.assumptions.length || (i.trait && i.hypotheses.length);
-    example.items = example.items.filter(i => !i.external || i.spec.length || i.crypto.length || i.bridge.length || assumed(i));
-    const checked = names => names.some(n => example.declarations.some(d => d.name === n && isCheckedTheorem(d)));
-    // Only functions need a spec; types and traits count in neither number.
-    const functions = example.items.filter(i => i.category === 'functions');
-    if (example.extraction === 'available') example.coverage = {
-      atoms: example.items.length,
-      functions: functions.length,
-      // Linked declarations of any kind, then the atoms among them with a checked theorem. An
-      // assumption is not evidence; the atoms that have one are counted on their own.
-      spec: functions.filter(i => i.spec.length).length,
-      checkedSpec: functions.filter(i => checked(i.spec)).length,
-      crypto: example.items.filter(i => i.crypto.length).length,
-      bridge: example.items.filter(i => i.bridge.length).length,
-      checkedBridge: example.items.filter(i => checked(i.bridge)).length,
-      assumed: example.items.filter(i => assumed(i)).length,
+    // The atoms and the coverage of one bridge method, or of an example without methods. A method
+    // replaces the shared files that have the name of one of its own; the links are made among
+    // its declarations and those of the other shared files.
+    const linked = method => {
+      const replaces = Object.values(example.files).filter(f => method && f.method === method)
+        .map(f => `${config.dir}/${f.path.slice(`${config.dir}/${method}/`.length)}`)
+        .filter(p => example.files[p] && !example.files[p].method && example.files[p].stage !== 'aeneas');
+      const view = { crate: config.crate, method, items: structuredClone(example.items),
+        declarations: example.declarations.filter(d => d.method ? d.method === method : !replaces.includes(d.file)) };
+      linkAtoms(view, declarations);
+      const assumed = i => i.assumptions.length || (i.trait && i.hypotheses.length);
+      const items = view.items.filter(i => !i.external || i.spec.length || i.crypto.length || i.bridge.length || assumed(i));
+      const checked = names => names.some(n => view.declarations.some(d => d.name === n && isCheckedTheorem(d)));
+      // Only functions need a spec; types and traits count in neither number.
+      const functions = items.filter(i => i.category === 'functions');
+      return { replaces, items, coverage: example.extraction !== 'available' ? null : {
+        atoms: items.length,
+        functions: functions.length,
+        // Linked declarations of any kind, then the atoms among them with a checked theorem. An
+        // assumption is not evidence; the atoms that have one are counted on their own.
+        spec: functions.filter(i => i.spec.length).length,
+        checkedSpec: functions.filter(i => checked(i.spec)).length,
+        crypto: items.filter(i => i.crypto.length).length,
+        bridge: items.filter(i => i.bridge.length).length,
+        checkedBridge: items.filter(i => checked(i.bridge)).length,
+        assumed: items.filter(i => assumed(i)).length,
+      } };
     };
-    return example;
+    const folders = [...new Set(Object.values(example.files).map(f => f.method).filter(Boolean))].sort();
+    assert(!folders.length || !example.files[`${config.dir}/Bridge.lean`],
+      `${config.dir}/Bridge.lean is beside bridge folders; move it into a folder of its own`);
+    example.methods = folders.map(id => {
+      const bridge = example.files[`${config.dir}/${id}/Bridge.lean`];
+      // The first line of the module docstring describes the method.
+      return { id, name: id.replace(/(?<=[a-z])(?=[A-Z])/g, ' '),
+        description: bridge.text.match(/\/-!\s*(?:#+\s*)?(.*?)\s*(?:-\/|$)/m)?.[1] || '', ...linked(id) };
+    });
+    // With methods, the example's own atoms and coverage are those of its first method.
+    const { items, coverage } = example.methods[0] || linked(null);
+    return { ...example, items, coverage };
   });
 }
