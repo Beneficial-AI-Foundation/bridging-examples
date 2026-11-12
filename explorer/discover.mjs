@@ -29,7 +29,7 @@ function counterpartSuffixes(atom, crate) {
  * attribute or by name (`crate.Spec.f_spec`, `crate.Crypto.f`, `crate.Bridge.f_bridge`,
  * `crate.Spec.f_assumption`, `crate.Bridge.f_assumption`), and to the assumptions its theorems
  * take as hypotheses. For the bridge method `example.method`, a name is tried under
- * `crate.<Method>` first, so that the method's own declaration replaces the shared one. */
+ * `crate.<Method>` before `crate`, where the shared files declare it. */
 export function linkAtoms(example, declarations) {
   const allNames = new Set(declarations.map(d => d.name));
   const atoms = example.items;
@@ -197,7 +197,7 @@ export function discover(base = root, configs = examples(base)) {
       }
     } else assert(!generated.length, `Incomplete extraction: ${config.id} has Lean files but no translation.json`);
     // A handwritten file in a folder of the example belongs to that bridge method. A file beside
-    // Aeneas.lean is shared by every method.
+    // Aeneas.lean is shared by the methods that have no file of that name.
     for (const p of walk(resolve(base, config.dir)).filter(p => p.endsWith('.lean') && relative(base, p) !== config.aeneas)) {
       const filename = basename(p, '.lean');
       const stage = filename === 'Spec' ? 'spec' : filename === 'Crypto' ? 'crypto' : 'bridge';
@@ -218,18 +218,22 @@ export function discover(base = root, configs = examples(base)) {
     if (!example.items.length) example.items.push({ id: 'source', name: 'Source files', category: 'Rust only',
       rust: { file: Object.keys(example.files).find(p => p.endsWith('/src/lib.rs')) || Object.keys(example.files)[0], start: 1 },
       aeneas: null, spec: [], crypto: [], bridge: [], assumptions: [], hypotheses: [] });
-    // The atoms and the coverage of one bridge method, or of an example without methods: the
-    // links are made among the shared declarations and those of the method.
+    // The atoms and the coverage of one bridge method, or of an example without methods. A method
+    // replaces the shared files that have the name of one of its own; the links are made among
+    // its declarations and those of the other shared files.
     const linked = method => {
+      const replaces = Object.values(example.files).filter(f => method && f.method === method)
+        .map(f => `${config.dir}/${f.path.slice(`${config.dir}/${method}/`.length)}`)
+        .filter(p => example.files[p] && !example.files[p].method && example.files[p].stage !== 'aeneas');
       const view = { crate: config.crate, method, items: structuredClone(example.items),
-        declarations: example.declarations.filter(d => !d.method || d.method === method) };
+        declarations: example.declarations.filter(d => d.method ? d.method === method : !replaces.includes(d.file)) };
       linkAtoms(view, declarations);
       const assumed = i => i.assumptions.length || (i.trait && i.hypotheses.length);
       const items = view.items.filter(i => !i.external || i.spec.length || i.crypto.length || i.bridge.length || assumed(i));
       const checked = names => names.some(n => view.declarations.some(d => d.name === n && isCheckedTheorem(d)));
       // Only functions need a spec; types and traits count in neither number.
       const functions = items.filter(i => i.category === 'functions');
-      return { items, coverage: example.extraction !== 'available' ? null : {
+      return { replaces, items, coverage: example.extraction !== 'available' ? null : {
         atoms: items.length,
         functions: functions.length,
         // Linked declarations of any kind, then the atoms among them with a checked theorem. An

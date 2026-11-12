@@ -14,15 +14,16 @@ const Explorer = {
   },
   example(bundle, id) { return bundle.examples.find(e => e.id === id) || bundle.examples.find(e => e.id === bundle.defaultExample) || bundle.examples[0]; },
   // `example` as shown for one of its bridge methods, the first unless `id` names another: the
-  // shared files and declarations with those of the method, and the method's atoms and coverage.
-  // The files are the objects of `example`. An example without methods is returned as it is.
+  // files and declarations of the method with those of the shared files it does not replace, and
+  // the method's atoms and coverage. The files are the objects of `example`. An example without
+  // methods is returned as it is.
   view(example, id) {
     const method = example.methods?.find(m => m.id === id) || example.methods?.[0];
     if (!method) return example;
-    const shown = entry => !entry.method || entry.method === method.id;
+    const shown = (entry, path) => entry.method ? entry.method === method.id : !method.replaces.includes(path);
     return { ...example, method, items: method.items, coverage: method.coverage,
-      files: Object.fromEntries(Object.entries(example.files).filter(([, file]) => shown(file))),
-      declarations: example.declarations.filter(shown) };
+      files: Object.fromEntries(Object.entries(example.files).filter(([path, file]) => shown(file, path))),
+      declarations: example.declarations.filter(d => shown(d, d.file)) };
   },
   // An atom by id, Lean name, alias (`item-aliases` in Cargo.toml) or unique suffix.
   item(example, id) {
