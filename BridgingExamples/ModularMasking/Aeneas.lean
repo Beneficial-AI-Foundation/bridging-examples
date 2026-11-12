@@ -34,14 +34,14 @@ structure rand_core.RngCore (Self : Type _) where
   fill_bytes : Self → Slice Std.U8 → Result (Self × (Slice Std.U8))
 
 /-- [modular_masking::sample_range]:
-    Source: 'src/lib.rs', lines 6:0-8:1
+    Source: 'src/lib.rs', lines 8:0-10:1
     Visibility: public -/
 axiom sample_range
   {R : Type _} (rand_coreRngCoreInst : rand_core.RngCore R) :
   R → Std.U32 → Result (Std.U32 × R)
 
 /-- [modular_masking::random_field]:
-    Source: 'src/lib.rs', lines 11:0-13:1
+    Source: 'src/lib.rs', lines 13:0-15:1
     Visibility: public -/
 def random_field
   {R : Type _} (rand_coreRngCoreInst : rand_core.RngCore R) (rng : R)
@@ -51,7 +51,7 @@ def random_field
   sample_range rand_coreRngCoreInst rng q
 
 /-- [modular_masking::field_mask]:
-    Source: 'src/lib.rs', lines 16:0-18:1
+    Source: 'src/lib.rs', lines 19:0-21:1
     Visibility: public -/
 def field_mask
   (q : Std.U32) (value : Std.U32) (pad : Std.U32) : Result Std.U32 := do
@@ -63,7 +63,7 @@ def field_mask
   ok (UScalar.cast .U32 i4)
 
 /-- [modular_masking::random_mask]:
-    Source: 'src/lib.rs', lines 21:0-24:1
+    Source: 'src/lib.rs', lines 24:0-27:1
     Visibility: public -/
 def random_mask
   {R : Type _} (rand_coreRngCoreInst : rand_core.RngCore R) (rng : R)

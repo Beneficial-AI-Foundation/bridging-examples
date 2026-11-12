@@ -3,8 +3,8 @@
   "sha256": {
     "BridgingExamples/ModularMasking/rust/Cargo.lock": "c1b5f78f1df14ae7fd236890cbf8bbcd1ae03f1fe3e79580a26f1b2589710fa3",
     "BridgingExamples/ModularMasking/rust/Cargo.toml": "53573c02edc3efee28eff88ce56ea8812b7beafa92c79fac0cfca9b894a6f372",
-    "BridgingExamples/ModularMasking/rust/src/lib.rs": "c3536326c8ee697bc21983f551d7fc89ad61bc56542570c3cd538a896811a5a3",
-    "BridgingExamples/ModularMasking/Aeneas.lean": "c2c7f42fd053df4f4515d4200ea62075c9ab282a531dd0cb5d9f8d7ae1e77a86",
-    "BridgingExamples/ModularMasking/translation.json": "195ed958131eab4274ff2715ec14be6686658aabded1aab6c4c17d938fd3476c"
+    "BridgingExamples/ModularMasking/rust/src/lib.rs": "633809d911d290265fbce2923c28695308ccb4b7b0e830906d7803c70ce14df6",
+    "BridgingExamples/ModularMasking/Aeneas.lean": "9223f4b6a77188fca72b8b28c10cfebeb9fb7a1f0276f7402adc1ba96ca889bb",
+    "BridgingExamples/ModularMasking/translation.json": "db5674f31a685459c67c8bf1d08b8eccd69b9e30c4bfa9936c54718cd31b047f"
   }
 }
