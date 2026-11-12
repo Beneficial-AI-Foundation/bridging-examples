@@ -1,6 +1,6 @@
 name = "bridgingExamples"
 version = "0.1.0"
-defaultTargets = ["BridgingExamples"]
+defaultTargets = ["BridgingExamples", "Common"]
 
 # Verso renders the Lean shown in the explorer. It comes first so that the versions of shared
 # dependencies are the ones VCVio and Mathlib pin.
