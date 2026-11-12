@@ -19,7 +19,7 @@ try {
     const errors = [], remote = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => { if (/^https?:/.test(request.url())) remote.push(request.url()); });
-    // Only Rust is expanded by default; the checks below read every pane.
+    // Only Rust and Crypto are expanded by default; the checks below read every pane.
     const site = new URL('site/index.html', import.meta.url);
     site.hash = `example=${data.examples[0].id}&${stages.map(stage => `${stage}=1`).join('&')}`;
     await page.goto(site.href);

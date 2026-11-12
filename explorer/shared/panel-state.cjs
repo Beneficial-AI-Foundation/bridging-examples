@@ -6,10 +6,10 @@ const Panels = {
   options: { rust: "rust", aeneas: "aeneas", spec: "spec", crypto: "crypto", bridge: "bridge" },
   railWidth: 36,
   minimumWidth: 220,
-  // Expanded panels from the URL (`rust=1`, …); Rust alone by default, and never none.
+  // Expanded panels from the URL (`rust=1`, …); Rust and Crypto by default, and never none.
   read(params) {
     const panels = Object.fromEntries(Object.values(this.options).map((key) =>
-      [key, params.has(key) ? params.get(key) === "1" : key === "rust"]));
+      [key, params.has(key) ? params.get(key) === "1" : key === "rust" || key === "crypto"]));
     if (!this.count(panels)) panels.rust = true;
     return panels;
   },
