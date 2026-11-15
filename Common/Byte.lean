@@ -46,6 +46,14 @@ def arrayEquiv {n : Usize} : Array U8 n ≃ List.Vector U8 n.val where
 instance sampleableArray {n : Usize} : SampleableType (Array U8 n) :=
   SampleableType.ofEquiv arrayEquiv.symm
 
+/-- The slice of the byte vector `bytes`. Its length is that of the slice `buffer`, so it is
+within the bound on slice lengths. -/
+def sliceOfVector (buffer : Slice U8) (bytes : List.Vector U8 buffer.length) : Slice U8 :=
+  Slice.from bytes.val (by rw [bytes.property]; exact buffer.property)
+
+@[simp] theorem sliceOfVector_val (buffer : Slice U8) (bytes : List.Vector U8 buffer.length) :
+    (sliceOfVector buffer bytes).val = bytes.val := Slice.from_val _ _
+
 @[simp] theorem uniformSample_byte :
     uniformSample U8 = modelToByte <$> uniformSample (Fin 256) := rfl
 
