@@ -23,10 +23,10 @@ function load() {
   const selected = Explorer.normalize(bundle, params);
   data = Explorer.view(Explorer.example(bundle, selected.example), selected.method);
   item = Explorer.item(data, selected.item);
-  state = { example:data.id, method:data.method?.id ?? '', item:item?.id ?? '', mode:item ? selected.mode : 'files', support:params.get('support') === '1', font:Math.min(18, Math.max(10, Number(params.get('font')) || 12)),
+  state = { example:data.id, method:data.method?.id ?? '', item:item?.id ?? '', mode:item ? selected.mode : 'files', font:Math.min(18, Math.max(10, Number(params.get('font')) || 12)),
     ...Panels.read(selected.params) };
   widths.set(Panels.signature(state), Panels.readWeights(state, selected.params.get('widths')));
-  for (const stage of Explorer.stages) files[stage] = Explorer.file(data, item, stage, selected.params.get(`${stage}File`), state.support);
+  for (const stage of Explorer.stages) files[stage] = Explorer.file(data, item, stage, selected.params.get(`${stage}File`));
 }
 // Writes the state to the URL hash, replacing the current history entry.
 function save() {
@@ -39,7 +39,7 @@ function save() {
 }
 // Selects atom `id`; after a click on a line (`origin`), that panel keeps its file and scroll.
 function select(id, origin) {
-  const selected = Explorer.selection(data,id,state.support,origin);
+  const selected = Explorer.selection(data,id,origin);
   item = selected.item; files = selected.files; state.item = item?.id ?? '';
   if (!item) state.mode = 'files';
   save(); render();
@@ -194,7 +194,6 @@ function render(preserveScroll = false) {
   $('#focus-declaration').title=state.mode==='files'?'Focus selected declaration':'Show full files';
   $('#focus-declaration').setAttribute('aria-label',$('#focus-declaration').title);
   $('#font-size').value=state.font; document.documentElement.style.setProperty('--code-size',`${state.font}px`);
-  $('#show-support').checked=state.support;
   const active=Panels.active(state);
   $('#panes').innerHTML=Explorer.stages.map((stage,index)=>{
     const expanded=state[stage],disabled=expanded&&active.length===1;
@@ -208,9 +207,11 @@ function render(preserveScroll = false) {
       const divider=previous&&next&&!state[Explorer.stages[index+1]]?handle(previous,next,''):'';
       return `<section class="pane ${stage} minimized"><div class="pane-header">${toggle}<h3>${titles[stage]}</h3></div>${divider}</section>`;
     }
-    const options=Explorer.files(data,stage,state.support),file=data.files[files[stage]];
+    const options=Explorer.files(data,stage),file=data.files[files[stage]];
+    // Files of the example are named from its folder; shared files keep their path.
+    const short=p=>p.startsWith(data.dir+'/')?p.slice(data.dir.length+1):p;
     const railsBefore=previous&&Explorer.stages[index-1]!==previous;
-    return `<section class="pane ${stage}"><div class="pane-header"><div class="pane-title"><h3>${titles[stage]}</h3><div class="pane-actions"><button class="pane-toggle" data-copy="${stage}" title="Copy displayed source" aria-label="Copy ${titles[stage]} source"${!file?' disabled':''}>${icon('copy')}</button><button class="pane-toggle" data-download="${stage}" title="Download complete file" aria-label="Download ${titles[stage]} file"${!file?' disabled':''}>${icon('download')}</button>${toggle}</div></div><select class="source-picker" data-source="${stage}" aria-label="${titles[stage]} source file"${!options.length?' disabled':''}>${options.map(p=>`<option value="${esc(p)}"${files[stage]===p?' selected':''}>${esc(p)}</option>`).join('')}</select></div><div class="pane-body" id="pane-body-${stage}">${body(stage)}</div>${railsBefore?handle(previous,stage,' leading'):''}${next?handle(stage,next,''):''}</section>`;
+    return `<section class="pane ${stage}"><div class="pane-header"><div class="pane-title"><h3>${titles[stage]}</h3><div class="pane-actions"><button class="pane-toggle" data-copy="${stage}" title="Copy displayed source" aria-label="Copy ${titles[stage]} source"${!file?' disabled':''}>${icon('copy')}</button><button class="pane-toggle" data-download="${stage}" title="Download complete file" aria-label="Download ${titles[stage]} file"${!file?' disabled':''}>${icon('download')}</button>${toggle}</div></div><label class="file-picker"><span>Files (${options.length})</span><select class="source-picker" data-source="${stage}" aria-label="${titles[stage]} file"${!options.length?' disabled':''}>${options.map(p=>`<option value="${esc(p)}" title="${esc(p)}"${files[stage]===p?' selected':''}>${esc(short(p))}</option>`).join('')}</select></label></div><div class="pane-body" id="pane-body-${stage}">${body(stage)}</div>${railsBefore?handle(previous,stage,' leading'):''}${next?handle(stage,next,''):''}</section>`;
   }).join('');
   for(const stage of Explorer.stages){$('#show-'+stage).checked=state[stage];$('#show-'+stage).disabled=state[stage]&&active.length===1;}
   document.querySelectorAll('.line[data-atom]').forEach(el=>el.onclick=event=>{
@@ -262,7 +263,7 @@ $('#method-picker').onchange=e=>{
   item=Explorer.item(data,state.item);state.item=item?.id ?? '';if(!item)state.mode='files';
   for(const stage of Explorer.stages){
     const entries=Explorer.entries(data,item,stage);
-    files[stage]=Explorer.file(data,item,stage,entries.length&&!entries.some(r=>r.file===files[stage])?null:files[stage],state.support);
+    files[stage]=Explorer.file(data,item,stage,entries.length&&!entries.some(r=>r.file===files[stage])?null:files[stage]);
   }
   save();render(Explorer.stages.filter(stage=>files[stage]===before[stage]));
 };
@@ -270,7 +271,6 @@ $('#home').innerHTML=overview();
 $('#item-picker').onchange=e=>select(e.target.value);
 $('#focus-declaration').onclick=()=>{state.mode=Explorer.toggleMode(state.mode);save();render();};
 for(const stage of Explorer.stages)$('#show-'+stage).onchange=e=>{Panels.set(state,stage,e.target.checked);save();render(true);};
-$('#show-support').onchange=e=>{state.support=e.target.checked;for(const stage of Explorer.stages)files[stage]=Explorer.file(data,item,stage,files[stage],state.support);save();render();};
 $('#font-size').onchange=e=>{state.font=Math.min(18,Math.max(10,Number(e.target.value)||12));save();render();};
 $('#provenance').onclick=provenance;
 $('#close-dialog').onclick=()=>$('#provenance-dialog').close();

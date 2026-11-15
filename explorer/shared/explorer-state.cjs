@@ -52,10 +52,10 @@ const Explorer = {
     return matches.length === 1 ? matches[0] : null;
   },
   // The atom `id` and the file of each panel; the panel clicked (`origin`) keeps its file.
-  selection(example, id, support, origin) {
+  selection(example, id, origin) {
     const item = this.item(example, id);
     const files = Object.fromEntries(this.stages.map(stage => [stage,
-      this.file(example, item, stage, origin?.stage === stage ? origin.file : null, support)]));
+      this.file(example, item, stage, origin?.stage === stage ? origin.file : null)]));
     return { item, files };
   },
   // A plain left click, without selected text, selects the atom of a line.
@@ -125,14 +125,14 @@ const Explorer = {
     append(cursor, end);
     return parts;
   },
-  // The files of a panel, main files first; supporting files only when `support` is set.
-  files(example, stage, support) {
-    return Object.keys(example.files).filter(p => example.files[p].stage === stage && (support || !example.files[p].support))
+  // The files of a panel: the main files, then the supporting files.
+  files(example, stage) {
+    return Object.keys(example.files).filter(p => example.files[p].stage === stage)
       .sort((a, b) => Number(example.files[a].support) - Number(example.files[b].support) || a.localeCompare(b));
   },
   // The file a panel shows: `requested`, else the first with `item`, else the first.
-  file(example, item, stage, requested, support) {
-    const files = this.files(example, stage, support);
+  file(example, item, stage, requested) {
+    const files = this.files(example, stage);
     return files.includes(requested) ? requested : this.entries(example, item, stage).find(e => files.includes(e.file))?.file || files[0];
   },
   // The example, bridge method, atom and mode of a URL; old links (`properties`, `security`) open
