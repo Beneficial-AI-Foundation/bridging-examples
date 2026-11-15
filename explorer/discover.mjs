@@ -33,6 +33,9 @@ function counterpartSuffixes(atom, crate) {
 export function linkAtoms(example, declarations) {
   const allNames = new Set(declarations.map(d => d.name));
   const atoms = example.items;
+  // A shared file in `Common/` is imported by several examples, so it links to no atom.
+  for (const d of example.declarations.filter(d => d.file.startsWith('Common/')))
+    assert(!d.links.length, `${d.name} is in a shared file and cannot be linked to an atom`);
   for (const role of ['spec', 'crypto', 'bridge', 'assumption']) {
     for (const decl of example.declarations.filter(d => role === 'assumption' ? isAssumption(d) : d.stage === role)) {
       for (const link of decl.links.filter(l => l.role === role)) for (const target of link.targets) {

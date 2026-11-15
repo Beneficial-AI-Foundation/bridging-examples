@@ -13,13 +13,14 @@ Aeneas extracts `mask` as a deterministic function of a generator `inst : RngCor
 1. `mask_eq_prog`: `mask` is the oracle program `maskProg`, run with `inst.fill_bytes`. This holds
    for every generator, with the final state and failures.
 2. `maskProg_bridge`: `maskProg`, run with uniform bytes (`unifImpl`), has the distribution of
-   `Crypto.mask`.
+   `Result.ok <$> Crypto.mask v`.
 3. `mask_bridge`: under `fill_bytes_assumption`, the extracted `mask`, run from a sampled state,
-   has the distribution of `Crypto.mask`.
+   has the distribution of `Result.ok <$> Crypto.mask v`.
 
 `fill_bytes_assumption` is the only Lean assumption on the generator. Two assumptions stay outside
-Lean: Aeneas extracts `mask` faithfully, and the real generator is `fill_bytes` run from a state
-with the distribution `seed`. The oracle definitions are in `Common/Oracle/Rng.lean`.
+Lean. First, Aeneas extracts `mask` faithfully. Second, the real generator is `fill_bytes` run
+from a state with the distribution `seed`, and this state is independent of the input `v`. The
+oracle definitions are in `Common/Oracle/Rng.lean`.
 -/
 
 namespace byte_mask.Oracle.Bridge
@@ -121,7 +122,7 @@ theorem mask_bridge {R : Type} (inst : rand_core.RngCore R) (seed : ProbComp R)
   simp only [mask_eq_prog]
   exact (h (maskProg v) (maskProg_byteBound v)).trans (maskProg_bridge v)
 
-/-- `unmask pad masked` has the distribution of `Crypto.unmask pad masked`. -/
+/-- `unmask pad masked` has the distribution of `Result.ok <$> Crypto.unmask pad masked`. -/
 theorem unmask_bridge (pad masked : U8) :
     (pure (unmask pad masked) : ProbComp _) =ᵈ
     (do let r ← Crypto.unmask pad masked

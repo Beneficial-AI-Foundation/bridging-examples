@@ -57,8 +57,8 @@ def sliceOfVector (s : Slice U8) (v : List.Vector U8 s.length) : Slice U8 :=
 theorem sliceOfVector_val (s : Slice U8) (v : List.Vector U8 s.length) :
     (sliceOfVector s v).val = v.val := Slice.from_val _ _
 
-/-- `unifImpl` answers the query `s` with `s.length` uniform bytes, independent of all earlier
-answers. -/
+/-- `unifImpl` answers the query `s` with a uniform byte vector of length `s.length`, sampled with
+fresh randomness for each query. -/
 def unifImpl : QueryImpl FillSpec ProbComp := fun s => do
   let v ← $ᵗ (List.Vector U8 s.length)
   pure (sliceOfVector s v)
@@ -82,10 +82,11 @@ distribution of the answers. A failure of `fill` is an observable result, and `p
 it. The budget `n` counts bytes, not queries. The condition says nothing about the other methods
 of the generator.
 
-The equality is exact, so the condition idealizes a real generator. If `n ≥ 1` and the support of
-`seed` has fewer than `256 ^ n` states, then no `fill` satisfies it. A generator that expands a
-short seed therefore does not satisfy it. The usual guarantee of a cryptographic generator is a
-small distinguishing advantage against bounded programs. That form is not stated here.
+The equality is exact, so the condition idealizes a real generator. If the support of `seed` has
+fewer than `256 ^ n` states, then no `fill` satisfies the condition with the budget `n`. So a
+generator that expands a seed of `k` bytes satisfies it for no budget above `k`. The usual
+guarantee of a cryptographic generator is a small advantage against computationally bounded
+distinguishers. That form is not stated here.
 
 `p` has no access to the state, so the condition does not model an adversary that reads, sets or
 copies it. `fill` is a function of the state, so a generator that reads an external entropy source
