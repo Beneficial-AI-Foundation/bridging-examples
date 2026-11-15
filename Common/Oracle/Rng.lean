@@ -84,13 +84,14 @@ of the generator.
 
 The equality is exact, so the condition idealizes a real generator. If the support of `seed` has
 fewer than `256 ^ n` states, then no `fill` satisfies the condition with the budget `n`. So a
-generator that expands a seed of `k` bytes satisfies it for no budget above `k`. The usual
-guarantee of a cryptographic generator is a small advantage against computationally bounded
-distinguishers. That form is not stated here.
+generator that expands a seed of `k` bytes satisfies it for no budget above `k`. This bound is
+necessary, not sufficient. The usual guarantee of a cryptographic generator is a small advantage
+against computationally bounded distinguishers. That form is not stated here.
 
 `p` has no access to the state, so the condition does not model an adversary that reads, sets or
-copies it. `fill` is a function of the state, so a generator that reads an external entropy source
-satisfies the condition only if `R` and `seed` model that source.
+copies it. A `fill` can satisfy the condition and keep a copy of every byte it returns in its
+final state. `fill` is a function of the state, so a generator that reads an external entropy
+source satisfies the condition only if `R` and `seed` model that source.
 
 A uniform tape of `n` bytes satisfies the condition (`idealRng_tape` in `Common/Oracle/Tape.lean`).
 -/
