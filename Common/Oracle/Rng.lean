@@ -77,21 +77,19 @@ computations have the same distribution:
 * sample a state `rng` from `seed`, run `p` with `fill` from `rng`, and drop the final state;
 * run `p` with `unifImpl`.
 
-One state is threaded through all the queries of `p`, so the condition is on the joint
-distribution of the answers. A failure of `fill` is an observable result, and `p` cannot catch
-it. The budget `n` counts bytes, not queries. The condition says nothing about the other methods
-of the generator.
+`p` picks each query from the earlier answers, and one state is threaded through all the
+queries, so the condition is on the joint distribution of the answers. `unifImpl` never fails, so
+`fill` must fail with probability zero on queries within the budget. The condition says nothing
+about the other methods of the generator.
 
 The equality is exact, so the condition idealizes a real generator. If the support of `seed` has
-fewer than `256 ^ n` states, then no `fill` satisfies the condition with the budget `n`. So a
-generator that expands a seed of `k` bytes satisfies it for no budget above `k`. This bound is
-necessary, not sufficient. The usual guarantee of a cryptographic generator is a small advantage
-against computationally bounded distinguishers. That form is not stated here.
+fewer than `256 ^ n` states, then no `fill` satisfies the condition. So a generator that expands
+a seed of `k` bytes satisfies it for no budget above `k`. The usual cryptographic guarantee, a
+small advantage against computationally bounded distinguishers, is not stated here.
 
-`p` has no access to the state, so the condition does not model an adversary that reads, sets or
-copies it. A `fill` can satisfy the condition and keep a copy of every byte it returns in its
-final state. `fill` is a function of the state, so a generator that reads an external entropy
-source satisfies the condition only if `R` and `seed` model that source.
+`p` has no access to the state, and the final state is dropped. So the condition does not model
+an adversary that reads, sets or copies the state, and a `fill` can satisfy the condition while it
+keeps a copy of every byte it returns.
 
 A uniform tape of `n` bytes satisfies the condition (`idealRng_tape` in `Common/Oracle/Tape.lean`).
 -/
