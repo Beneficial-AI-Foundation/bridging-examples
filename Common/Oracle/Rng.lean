@@ -16,7 +16,9 @@ namespace BridgingExamples.Oracle
 
 open Aeneas Aeneas.Std OracleSpec OracleComp
 
-/-- The oracle of `fill_bytes`. A query is a buffer, and its answer is the filled buffer. -/
+/-- The oracle of `fill_bytes`. A query is a buffer, and its answer is the filled buffer. The
+type does not relate the lengths of a query and its answer. In Rust, `fill_bytes` writes into its
+argument, so the length cannot change, but the Aeneas model returns a new slice. -/
 abbrev FillSpec : OracleSpec (Slice U8) := Slice U8 →ₒ Slice U8
 
 /-- The method `fill_bytes` of a generator with state type `R`. -/
@@ -29,7 +31,8 @@ def fillImpl {R : Type} (fill : Fill R) : QueryImpl FillSpec (StateT R Result) :
     Result.ok (s1, rng1)
 
 /-- `runProg fill p rng` runs `p` with `fill` from the state `rng`, and returns the result of `p`
-and the final state. It fails at the first failure of `fill` or of `p`. -/
+and the final state. It fails or diverges at the first failure or divergence of `fill` or of
+`p`. -/
 def runProg {R α : Type} (fill : Fill R) (p : OracleComp FillSpec (Result α)) (rng : R) :
     Result (α × R) := do
   let (r, rng1) ← (simulateQ (fillImpl fill) p).run rng
@@ -58,7 +61,7 @@ theorem sliceOfVector_val (s : Slice U8) (v : List.Vector U8 s.length) :
     (sliceOfVector s v).val = v.val := Slice.from_val _ _
 
 /-- `unifImpl` answers the query `s` with a uniform byte vector of length `s.length`, sampled with
-fresh randomness for each query. -/
+fresh randomness for each query. The answer does not depend on the content of `s`. -/
 def unifImpl : QueryImpl FillSpec ProbComp := fun s => do
   let v ← $ᵗ (List.Vector U8 s.length)
   pure (sliceOfVector s v)
@@ -83,9 +86,12 @@ queries, so the condition is on the joint distribution of the answers. `unifImpl
 about the other methods of the generator.
 
 The equality is exact, so the condition idealizes a real generator. If the support of `seed` has
-fewer than `256 ^ n` states, then no `fill` satisfies the condition. So a generator that expands
-a seed of `k` bytes satisfies it for no budget above `k`. The usual cryptographic guarantee, a
-small advantage against computationally bounded distinguishers, is not stated here.
+fewer than `256 ^ n` states, then no `fill` satisfies the condition. This is not proved in Lean.
+The witness is the program that asks for `n` bytes and returns them. If `n > Usize.max`, it asks
+for one byte at a time. It has `256 ^ n` results under `unifImpl`, and at most one result for each
+state of `seed`. So a generator that expands a seed of `k` bytes satisfies the condition for no
+budget above `k`. The usual cryptographic guarantee, a small advantage against computationally
+bounded distinguishers, is not stated here.
 
 `p` has no access to the state, and the final state is dropped. So the condition does not model
 an adversary that reads, sets or copies the state, and a `fill` can satisfy the condition while it
