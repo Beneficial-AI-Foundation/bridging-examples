@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, relative, basename } from 'node:path';
 import { createHash } from 'node:crypto';
-import { examples, root, walk } from '../scripts/examples.mjs';
+import { examples, root, walk, sharedFiles } from '../scripts/examples.mjs';
 import { opaqueFunctionNames, auditDeclarations, declarationEvidence, isCheckedTheorem, isAssumption } from './trust.mjs';
 
 export const hash = text => createHash('sha256').update(text).digest('hex');
@@ -33,6 +33,9 @@ function counterpartSuffixes(atom, crate) {
 export function linkAtoms(example, declarations) {
   const allNames = new Set(declarations.map(d => d.name));
   const atoms = example.items;
+  // A shared file in `Common/` is imported by several examples, so it links to no atom.
+  for (const d of example.declarations.filter(d => d.file.startsWith('Common/')))
+    assert(!d.links.length, `${d.name} is in a shared file and cannot be linked to an atom`);
   for (const role of ['spec', 'crypto', 'bridge', 'assumption']) {
     for (const decl of example.declarations.filter(d => role === 'assumption' ? isAssumption(d) : d.stage === role)) {
       for (const link of decl.links.filter(l => l.role === role)) for (const target of link.targets) {
@@ -213,6 +216,7 @@ export function discover(base = root, configs = examples(base)) {
         `${config.dir}/${folder} holds ${rest.join('/')} but no Bridge.lean of its own; only a bridge folder holds a Spec.lean, Crypto.lean or Bridge.lean`);
       file(relative(base, p), stage, support, method);
     }
+    for (const p of sharedFiles(config.dir, base)) file(p, 'bridge', true);
     for (const d of declarations) {
       const path = `${d.module.replaceAll('.', '/')}.lean`;
       const source = example.files[path];

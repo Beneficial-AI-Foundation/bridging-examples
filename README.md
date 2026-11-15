@@ -2,7 +2,7 @@ Examples connecting Rust code to cryptographic specifications in Lean 4, using
 [Aeneas](https://github.com/AeneasVerif/aeneas) and [VCVio](https://github.com/Verified-zkEVM/VCVio). 
 
 Each example is in a folder `BridgingExamples/<Example>/`. A complete example contains the five
-stages below; most currently stop at Aeneas, and only Smoke has Spec, Crypto and Bridge:
+stages below. Some examples stop at Aeneas:
 
 - **Rust**: the implementation of a cryptographic primitive.
 - **Aeneas**: the Lean models that Aeneas extracted from the implementation.
@@ -13,7 +13,8 @@ stages below; most currently stop at Aeneas, and only Smoke has Spec, Crypto and
 An example may have several bridges, which can differ in Spec, Crypto and proof method. Each bridge
 is then a folder of the example with its own `Bridge.lean`, and the explorer switches between
 them: Smoke has `Direct/` and `Distributional/`. A folder without a `Bridge.lean` holds files
-shared by the bridges.
+shared by the bridges. Definitions that several examples use are in `Common/`, for example the
+generator oracle in `Common/Oracle/`.
 
 ## Examples
 

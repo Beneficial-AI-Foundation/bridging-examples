@@ -7,7 +7,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, renameSync, existsSync, rmSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
 import { createHash } from 'node:crypto';
-import { examples, root, read, walk } from '../scripts/examples.mjs';
+import { examples, root, read, walk, projectImports, sharedFiles } from '../scripts/examples.mjs';
 import { splitLines, guillemets } from './verso/lines.mjs';
 
 const hash = text => createHash('sha256').update(text).digest('hex');
@@ -19,24 +19,13 @@ const version = hash(read('explorer/verso/lines.mjs') + read('explorer/verso/Ren
 
 const moduleOf = path => path.slice(0, -'.lean'.length).replaceAll('/', '.');
 const cacheOf = path => resolve(out, `${moduleOf(path)}.json`);
-const files = examples().flatMap(e => walk(resolve(root, e.dir))).filter(p => p.endsWith('.lean'))
-  .map(p => relative(root, p)).sort();
+const files = [...new Set(examples().flatMap(e => [...walk(resolve(root, e.dir))
+  .filter(p => p.endsWith('.lean')).map(p => relative(root, p)), ...sharedFiles(e.dir)]))].sort();
 
 // Hovers show the types and docstrings of imported declarations, so a render also depends on the
 // project files the module imports, directly or not.
 const imports = new Map();
-function importsOf(path) {
-  if (!imports.has(path)) {
-    imports.set(path, new Set());
-    for (const [, module] of read(path).matchAll(/^(?:public\s+)?(?:meta\s+)?import\s+(\S+)/gm)) {
-      const imported = `${module.replaceAll('.', '/')}.lean`;
-      if (!/^(BridgingExamples|Common)\//.test(imported) || !existsSync(resolve(root, imported))) continue;
-      imports.get(path).add(imported);
-      for (const further of importsOf(imported)) imports.get(path).add(further);
-    }
-  }
-  return imports.get(path);
-}
+const importsOf = path => projectImports(path, root, imports);
 const inputsOf = path => hash([path, ...[...importsOf(path)].sort()].map(p => hash(read(p))).join(''));
 const fresh = path => {
   if (!existsSync(cacheOf(path))) return false;
