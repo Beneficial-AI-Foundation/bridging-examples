@@ -1,3 +1,6 @@
 /* The explorer's colours for Lean rendered by Verso. Verso's own stylesheet comes first. */
 .hl.lean { --verso-code-keyword-color: #77519c; --verso-code-keyword-weight: normal; --verso-code-const-color: #256e93; }
 .line code .doc-comment, .line code .comment { color: #72847e; }
+/* Verso marks each tactic with a small toggle that pins its proof state. In a statement, where a
+   short proof is part of the formula, the marks only clutter it; hovering still shows the state. */
+:not(.proof-body) > pre.hl.lean .tactic > label::after { content: none; }
