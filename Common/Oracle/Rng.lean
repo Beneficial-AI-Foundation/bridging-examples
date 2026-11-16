@@ -53,6 +53,16 @@ theorem runProg_query {R α : Type} (fill : Fill R) (b : Slice U8) (f : Slice U8
       (fun q => Aeneas.Std.bind q.1 fun a => Result.ok (a, q.2)) = _
   simp only [Aeneas.Std.bind_assoc, Aeneas.Std.bind_ok]
 
+/-- Dropping the final state of `runProg fill p rng` is dropping the final state of the simulation
+of `p` and flattening the nested `Result`. -/
+theorem fst_runProg {R α : Type} (fill : Fill R) (p : OracleComp FillSpec (Result α)) (rng : R) :
+    Prod.fst <$> runProg fill p rng =
+      (Prod.fst <$> (simulateQ (fillImpl fill) p).run rng) >>= id := by
+  have hok : ∀ {γ : Type} (x : γ), Result.ok x = pure x := fun _ => rfl
+  have hbind : ∀ {γ δ : Type} (x : Result γ) (f : γ → Result δ),
+      Aeneas.Std.bind x f = x >>= f := fun _ _ => rfl
+  simp only [runProg, hok, hbind, map_bind, bind_map_left, map_pure, bind_pure, uncurry, id]
+
 /-- `unifImpl` answers the query `s` with a uniform byte vector of length `s.length`, sampled with
 fresh randomness for each query. The answer does not depend on the content of `s`. -/
 def unifImpl : QueryImpl FillSpec ProbComp := fun s => do
@@ -90,7 +100,8 @@ bounded distinguishers, is not stated here.
 an adversary that reads, sets or copies the state, and a `fill` can satisfy the condition while it
 keeps a copy of every byte it returns.
 
-A uniform tape of `n` bytes satisfies the condition (`idealRng_tape` in `Common/Oracle/Tape.lean`).
+A uniform tape of `n` bytes satisfies the condition (`idealRng_tape` in
+`Common/Oracle/EntropyIdealRng.lean`).
 -/
 def IdealRng {R : Type} (fill : Fill R) (seed : ProbComp R) (n : ℕ) : Prop :=
   ∀ {α : Type} (p : OracleComp FillSpec (Result α)), ByteBound p n →

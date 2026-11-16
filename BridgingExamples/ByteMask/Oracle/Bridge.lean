@@ -1,5 +1,5 @@
-import BridgingExamples.ByteMask.Oracle.Spec
-import BridgingExamples.ByteMask.Oracle.Crypto
+import BridgingExamples.ByteMask.Spec
+import BridgingExamples.ByteMask.Crypto
 import Common.Correspondence
 import Common.Metadata
 import Common.Oracle.Tape
@@ -25,22 +25,10 @@ oracle definitions are in `Common/Oracle/Rng.lean`.
 
 namespace byte_mask.Oracle.Bridge
 
-open Aeneas Aeneas.Std BridgingExamples BridgingExamples.Oracle byte_mask.Oracle.Spec OracleSpec
+open Aeneas Aeneas.Std BridgingExamples BridgingExamples.Oracle byte_mask.Spec OracleSpec
   OracleComp
 
 /-! ## `mask` as an oracle program -/
-
-/-- The stateless generator whose `fill_bytes` returns `b`. Its other methods fail, and `mask`
-does not call them. -/
-def constRng (b : Slice U8) : rand_core.RngCore Unit where
-  next_u32 _ := Result.fail .panic
-  next_u64 _ := Result.fail .panic
-  fill_bytes := constFill b
-
-/-- `maskRest v b`: the extracted `mask` on `v`, with `b` as the answer of `fill_bytes`. -/
-def maskRest (v : U8) (b : Slice U8) : Result (U8 × U8) := do
-  let (p, _) ← mask (constRng b) () v
-  Result.ok p
 
 /-- `mask` as an oracle program: one query for `padBuf`, then `maskRest` on the answer. -/
 def maskProg (v : U8) : OracleComp FillSpec (Result (U8 × U8)) := do
@@ -52,26 +40,11 @@ def maskProg (v : U8) : OracleComp FillSpec (Result (U8 × U8)) := do
 @[bridge_for mask]
 theorem mask_eq_prog {R : Type} (inst : rand_core.RngCore R) (rng : R) (v : U8) :
     mask inst rng v = runProg inst.fill_bytes (maskProg v) rng := by
-  rw [maskProg, runProg_query]
-  simp only [maskRest, mask, constRng, constFill, lift, Array.to_slice_mut, padBuf,
-    Aeneas.Std.bind_assoc, Aeneas.Std.bind_ok, uncurry_eq]
+  rw [maskProg, runProg_query, mask_eq]
 
 /-- `maskProg v` asks for at most one byte. -/
 theorem maskProg_byteBound (v : U8) : ByteBound (maskProg v) 1 := by
   simp [ByteBound, maskProg, padBuf_length]
-
-/-- If `b` is the one byte `x`, then `maskRest v b` returns the pad `x` and `v ^^^ x`. -/
-theorem maskRest_of_val (v x : U8) (b : Slice U8) (hb : b.val = [x]) :
-    maskRest v b = Result.ok (x, v ^^^ x) := by
-  simp only [maskRest, mask, constRng, constFill, lift, Array.to_slice_mut,
-    Aeneas.Std.bind_assoc, Aeneas.Std.bind_ok, uncurry_eq]
-  simp [Array.from_slice, Array.index_usize, hb]
-
-/-- `List.Vector.head` is a bijection from byte vectors of length 1 to bytes. -/
-theorem head_bijective : Function.Bijective (List.Vector.head : List.Vector U8 1 → U8) := by
-  refine ⟨fun a b h => ?_, fun x => ⟨x ::ᵥ List.Vector.nil, by simp⟩⟩
-  rw [← List.Vector.cons_head_tail a, ← List.Vector.cons_head_tail b, h,
-    List.Vector.eq_nil a.tail, List.Vector.eq_nil b.tail]
 
 /-- Run with `unifImpl`, `maskProg v` has the distribution of `Result.ok <$> Crypto.mask v`. -/
 @[bridge_for mask]
