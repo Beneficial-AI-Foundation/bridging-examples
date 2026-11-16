@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, relative, basename } from 'node:path';
 import { createHash } from 'node:crypto';
-import { examples, root, walk, sharedFiles } from '../scripts/examples.mjs';
+import { examples, root, walk, sharedFileBridges } from '../scripts/examples.mjs';
 import { opaqueFunctionNames, auditDeclarations, declarationEvidence, isCheckedTheorem, isAssumption } from './trust.mjs';
 
 export const hash = text => createHash('sha256').update(text).digest('hex');
@@ -216,7 +216,12 @@ export function discover(base = root, configs = examples(base)) {
         `${config.dir}/${folder} holds ${rest.join('/')} but no Bridge.lean of its own; only a bridge folder holds a Spec.lean, Crypto.lean or Bridge.lean`);
       file(relative(base, p), stage, support, method);
     }
-    for (const p of sharedFiles(config.dir, base)) file(p, 'bridge', true);
+    // A `Common/` file belongs to the bridges that import it. One that every bridge imports is
+    // shared, like a file beside Aeneas.lean.
+    for (const [p, folders] of sharedFileBridges(config.dir, base)) {
+      file(p, 'bridge', true);
+      if ([...bridgeFolders].some(f => !folders.includes(f))) example.files[p].methods = folders;
+    }
     for (const d of declarations) {
       const path = `${d.module.replaceAll('.', '/')}.lean`;
       const source = example.files[path];
@@ -229,7 +234,7 @@ export function discover(base = root, configs = examples(base)) {
         if (d.kind === 'definition') example.extracted.push({ name: d.name, kind: d.kind, file: path, start: d.start, end: d.end });
         continue;
       }
-      example.declarations.push({ ...d, file: path, stage: source.stage, method: source.method, ...declarationEvidence(d, opaqueFunctions) });
+      example.declarations.push({ ...d, file: path, stage: source.stage, method: source.method, methods: source.methods, ...declarationEvidence(d, opaqueFunctions) });
     }
     example.declarations.sort((a,b) => a.file.localeCompare(b.file) || a.start-b.start || a.name.localeCompare(b.name));
     if (!example.items.length) example.items.push({ id: 'source', name: 'Source files', category: 'Rust only',
@@ -243,7 +248,8 @@ export function discover(base = root, configs = examples(base)) {
         .map(f => `${config.dir}/${f.path.slice(`${config.dir}/${method}/`.length)}`)
         .filter(p => example.files[p] && !example.files[p].method && example.files[p].stage !== 'aeneas');
       const view = { crate: config.crate, method, items: structuredClone(example.items),
-        declarations: example.declarations.filter(d => d.method ? d.method === method : !replaces.includes(d.file)) };
+        declarations: example.declarations.filter(d => d.method ? d.method === method
+          : d.methods ? d.methods.includes(method) : !replaces.includes(d.file)) };
       linkAtoms(view, declarations);
       const assumed = i => i.assumptions.length || (i.trait && i.hypotheses.length);
       const items = view.items.filter(i => !i.external || i.spec.length || i.crypto.length || i.bridge.length || assumed(i));

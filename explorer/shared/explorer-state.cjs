@@ -14,13 +14,14 @@ const Explorer = {
   },
   example(bundle, id) { return bundle.examples.find(e => e.id === id) || bundle.examples.find(e => e.id === bundle.defaultExample) || bundle.examples[0]; },
   // `example` as shown for one of its bridge methods, the first unless `id` names another: the
-  // files and declarations of the method with those of the shared files it does not replace, and
-  // the method's atoms and coverage. The files are the objects of `example`. An example without
-  // methods is returned as it is.
+  // files and declarations of the method with those of the shared files it does not replace and
+  // of the `Common/` files that its bridge imports, and the method's atoms and coverage. The files
+  // are the objects of `example`. An example without methods is returned as it is.
   view(example, id) {
     const method = example.methods?.find(m => m.id === id) || example.methods?.[0];
     if (!method) return example;
-    const shown = (entry, path) => entry.method ? entry.method === method.id : !method.replaces.includes(path);
+    const shown = (entry, path) => entry.method ? entry.method === method.id
+      : entry.methods ? entry.methods.includes(method.id) : !method.replaces.includes(path);
     return { ...example, method, items: method.items, coverage: method.coverage,
       files: Object.fromEntries(Object.entries(example.files).filter(([path, file]) => shown(file, path))),
       declarations: example.declarations.filter(d => shown(d, d.file)) };
