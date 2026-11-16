@@ -53,13 +53,6 @@ theorem runProg_query {R α : Type} (fill : Fill R) (b : Slice U8) (f : Slice U8
       (fun q => Aeneas.Std.bind q.1 fun a => Result.ok (a, q.2)) = _
   simp only [Aeneas.Std.bind_assoc, Aeneas.Std.bind_ok]
 
-/-- The slice of a byte vector of length `s.length`. -/
-def sliceOfVector (s : Slice U8) (v : List.Vector U8 s.length) : Slice U8 :=
-  Slice.from v.val (by rw [v.property]; exact s.property)
-
-theorem sliceOfVector_val (s : Slice U8) (v : List.Vector U8 s.length) :
-    (sliceOfVector s v).val = v.val := Slice.from_val _ _
-
 /-- `unifImpl` answers the query `s` with a uniform byte vector of length `s.length`, sampled with
 fresh randomness for each query. The answer does not depend on the content of `s`. -/
 def unifImpl : QueryImpl FillSpec ProbComp := fun s => do

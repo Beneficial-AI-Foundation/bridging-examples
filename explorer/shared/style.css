@@ -85,7 +85,9 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .pane.crypto .pane-header h3::before { background: #b38035; }
 .pane.bridge .pane-header h3::before { background: #a6535d; }
 .stage-status { padding: 8px 12px; font-size: 11px; color: #8b5c1c; border-bottom: 1px solid var(--line); }
-.source-picker { width: 100%; min-width: 0; border: 0; background: transparent; font: 10px/1.5 var(--mono); color: var(--muted); }
+.file-picker { display: flex; align-items: center; min-width: 0; border: 1px solid #d9dee5; border-radius: 3px; background: #fff; font: 10px var(--mono); color: #596574; }
+.file-picker span { flex-shrink: 0; padding: 0 7px; color: var(--muted); }
+.source-picker { flex: 1; width: 100%; min-width: 0; border: 0; border-left: 1px solid #e3e7ec; background: transparent; padding: 4px 6px; font: 10px var(--mono); color: var(--ink, #253041); cursor: pointer; }
 .pane-actions { display: flex; flex-wrap: wrap; max-width: 100%; align-items: center; gap: 5px; }
 .pane-actions button { font-size: 10px; padding: 3px 6px; }
 .pane-toggle, .pane-actions .pane-toggle { width: 24px; height: 24px; flex-shrink: 0; padding: 3px; display: inline-flex; align-items: center; justify-content: center; }
@@ -94,8 +96,6 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .pane.minimized .pane-header { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 0; }
 .pane.minimized h3 { writing-mode: vertical-rl; font-size: 11px; }
 .file-path { display: block; font: 10px/1.5 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
-.file-picker { display: block; min-width: 0; }
-.file-picker select { width: 100%; min-width: 0; font: 10px/1.5 var(--mono); color: var(--muted); border: 0; background: transparent; }
 .section-file { padding: 0 14px 8px; }
 .pane-body { overflow: auto; min-height: 0; flex: 1; padding: 10px 0 35px; overscroll-behavior: contain; background: #fff; }
 .related-context { position: sticky; top: -10px; z-index: 1; padding: 6px 12px; margin-top: -10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); background: #fbfcfd; display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--muted); }

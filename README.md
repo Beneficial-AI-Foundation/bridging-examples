@@ -10,12 +10,6 @@ stages below. Some examples stop at Aeneas:
 - **Crypto**: cryptographic Lean models for the extracted functions, specified in VCVio.
 - **Bridge**: distributional equivalence of Aeneas and Crypto models, under assumed probabilistic specifications for externally called functions.
 
-An example may have several bridges, which can differ in Spec, Crypto and proof method. Each bridge
-is then a folder of the example with its own `Bridge.lean`, and the explorer switches between
-them: Smoke has `Direct/` and `Distributional/`. A folder without a `Bridge.lean` holds files
-shared by the bridges. Definitions that several examples use are in `Common/`, for example the
-generator oracle in `Common/Oracle/`.
-
 ## Examples
 
 See [explorer](https://beneficial-ai-foundation.github.io/bridging-examples/).
