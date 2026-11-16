@@ -294,21 +294,37 @@ function bindVerso() {
   });
   window.versoInit().then(peekDefinitions);
 }
-// The lines of definition `d` after its docstring, which the hover already shows.
-function definitionLines(d) {
+// The lines of definition `d`, without its docstring when the hover already shows it.
+function definitionLines(d, withDoc) {
   const file = data.files[d.file];
   const rows = (file.rows ||= file.text.split('\n'));
   let n = d.start;
-  if (rows[n-1]?.trimStart().startsWith('/--')) { while (n < d.end && !rows[n-1].includes('-/')) n++; n++; }
+  if (!withDoc && rows[n-1]?.trimStart().startsWith('/--')) { while (n < d.end && !rows[n-1].includes('-/')) n++; n++; }
   const pre = document.createElement('pre');
   pre.className = `code peek${file.html ? ' hl lean' : ''}`;
   pre.innerHTML = rows.slice(n-1, d.end).map((line, i) =>
     `<span class="line"><code>${file.html?.[n-1+i] ?? highlight(line)}</code></span>`).join('');
   return pre;
 }
+// Definition `d`, then the definitions it uses from `definitions`, directly or not, each once.
+function definitionChain(d, definitions) {
+  const chain = [], queue = [d];
+  while (queue.length) {
+    const next = queue.shift();
+    if (chain.includes(next)) continue;
+    chain.push(next);
+    const html = (data.files[next.file].html || []).slice(next.start - 1, next.end).join('\n');
+    for (const [, name] of html.matchAll(/data-binding="const-([^"]+)"/g)) {
+      const used = definitions.get(name);
+      if (used && !chain.includes(used) && !queue.includes(used)) queue.push(used);
+    }
+  }
+  return chain;
+}
 // A constant defined in one of the example's Lean files (its own or a shared `Common/` file) shows
-// its definition under Verso's type and docstring, so it can be read without opening its file.
-// Theorems keep the plain hover, which already shows their statement.
+// its definition under Verso's type and docstring, followed by the definitions it uses from those
+// files, so it can be read without opening them. Theorems keep the plain hover, which already
+// shows their statement.
 function peekDefinitions() {
   const definitions = new Map(data.declarations.filter(d => d.kind !== 'theorem' && data.files[d.file])
     .map(d => [d.name, d]));
@@ -323,7 +339,7 @@ function peekDefinitions() {
     const box = tip.props.content;
     if (!(box instanceof Element)) return;
     tip.peek = true;
-    box.append(definitionLines(d));
+    definitionChain(d, definitions).forEach((def, i) => box.append(definitionLines(def, i > 0)));
     tip.setContent(box);
   });
 }
