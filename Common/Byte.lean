@@ -54,10 +54,15 @@ def sliceOfVector (buffer : Slice U8) (bytes : List.Vector U8 buffer.length) : S
 @[simp] theorem sliceOfVector_val (buffer : Slice U8) (bytes : List.Vector U8 buffer.length) :
     (sliceOfVector buffer bytes).val = bytes.val := Slice.from_val _ _
 
+/-- A vector of `buffer.length` bytes has length at most `Usize.max`, the bound on slice lengths. -/
+theorem vector_length_le (buffer : Slice U8) (bytes : List.Vector U8 buffer.length) :
+    bytes.val.length ≤ Usize.max := by
+  rw [bytes.property]; exact buffer.property
+
 /-- A slice of `buffer.length` uniform bytes. -/
 def uniformBytes (buffer : Slice U8) : ProbComp (Slice U8) := do
   let bytes ← $ᵗ (List.Vector U8 buffer.length)
-  pure (sliceOfVector buffer bytes)
+  pure (Slice.from bytes.val (vector_length_le buffer bytes))
 
 @[simp] theorem uniformSample_byte :
     uniformSample U8 = modelToByte <$> uniformSample (Fin 256) := rfl
