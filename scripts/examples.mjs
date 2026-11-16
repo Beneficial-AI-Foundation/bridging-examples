@@ -1,7 +1,7 @@
 // Repository paths and the list of examples, shared by the scripts and the explorer.
 import { readdirSync, existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { resolve, relative, basename } from 'node:path';
+import { resolve, relative, basename, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const root = fileURLToPath(new URL('../', import.meta.url));
@@ -69,10 +69,20 @@ export function projectImports(path, base = root, cache = new Map()) {
 const tooling = ['Common/Metadata.lean', 'Common/SourceRanges.lean'];
 
 /** The `Common/` files that the `Bridge.lean` files of the example in `dir` import, directly or
- * not, except explorer tooling. The explorer shows them as supporting files of the Bridge panel. */
-export function sharedFiles(dir, base = root) {
-  const cache = new Map();
-  return [...new Set(walk(resolve(base, dir)).filter(p => basename(p) === 'Bridge.lean')
-    .flatMap(p => [...projectImports(relative(base, p), base, cache)]))]
-    .filter(p => p.startsWith('Common/') && !tooling.includes(p)).sort();
+ * not, except explorer tooling: a map from each file to the folders of the bridges that import it
+ * (`''` for a `Bridge.lean` beside `Aeneas.lean`). The explorer shows each file as a supporting
+ * file of the Bridge panel of those bridges. */
+export function sharedFileBridges(dir, base = root) {
+  const cache = new Map(), bridges = new Map();
+  for (const p of walk(resolve(base, dir)).filter(p => basename(p) === 'Bridge.lean').sort()) {
+    const folder = relative(resolve(base, dir), dirname(p));
+    for (const imported of projectImports(relative(base, p), base, cache)) {
+      if (imported.startsWith('Common/') && !tooling.includes(imported))
+        bridges.set(imported, [...(bridges.get(imported) || []), folder]);
+    }
+  }
+  return new Map([...bridges].sort(([a], [b]) => a.localeCompare(b)));
 }
+
+/** The `Common/` files of `sharedFileBridges`, in order. */
+export const sharedFiles = (dir, base = root) => [...sharedFileBridges(dir, base).keys()];
