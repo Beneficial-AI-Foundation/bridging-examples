@@ -292,7 +292,40 @@ function bindVerso() {
     const state = el.closest('.pane')?.querySelector(`.tactic[data-tid="${CSS.escape(el.dataset.tid || '')}"] > .tactic-state`);
     if (state) el.append(state.cloneNode(true)); else el.classList.remove('tactic');
   });
-  window.versoInit();
+  window.versoInit().then(peekDefinitions);
+}
+// The lines of definition `d` after its docstring, which the hover already shows.
+function definitionLines(d) {
+  const file = data.files[d.file];
+  const rows = (file.rows ||= file.text.split('\n'));
+  let n = d.start;
+  if (rows[n-1]?.trimStart().startsWith('/--')) { while (n < d.end && !rows[n-1].includes('-/')) n++; n++; }
+  const pre = document.createElement('pre');
+  pre.className = `code peek${file.html ? ' hl lean' : ''}`;
+  pre.innerHTML = rows.slice(n-1, d.end).map((line, i) =>
+    `<span class="line"><code>${file.html?.[n-1+i] ?? highlight(line)}</code></span>`).join('');
+  return pre;
+}
+// A constant defined in one of the example's Lean files (its own or a shared `Common/` file) shows
+// its definition under Verso's type and docstring, so it can be read without opening its file.
+// Theorems keep the plain hover, which already shows their statement.
+function peekDefinitions() {
+  const definitions = new Map(data.declarations.filter(d => d.kind !== 'theorem' && data.files[d.file])
+    .map(d => [d.name, d]));
+  document.querySelectorAll('.pane .hl.lean .const.token[data-binding^="const-"]').forEach(el => {
+    const d = definitions.get(el.dataset.binding.slice('const-'.length)), tip = el._tippy;
+    if (!d || !tip || tip.peek) return;
+    // Not on the definition itself.
+    const stage = el.closest('[id^="pane-body-"]')?.id.slice('pane-body-'.length);
+    const line = Number(el.closest('.line')?.dataset.line);
+    if (files[stage] === d.file && line >= d.start && line <= d.end) return;
+    // Tippy holds the hover's content as an element, built when Verso bound the token.
+    const box = tip.props.content;
+    if (!(box instanceof Element)) return;
+    tip.peek = true;
+    box.append(definitionLines(d));
+    tip.setContent(box);
+  });
 }
 // Unpacks Verso's rendering, embedded by render.mjs, and redraws.
 async function loadVerso() {
