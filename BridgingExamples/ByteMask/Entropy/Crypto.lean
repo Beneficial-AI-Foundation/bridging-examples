@@ -12,7 +12,7 @@ def rand_core.RngCore.fill_bytes (length : ℕ) : ProbComp (List.Vector U8 lengt
 /-- Masking algorithm: draws a one-byte pad and returns it together with `value ^^^ pad`. -/
 def mask (value : U8) : ProbComp (U8 × U8) := do
   let bytes ← rand_core.RngCore.fill_bytes 1
-  let pad := bytes.head
+  let pad := bytes.get 0
   pure (pad, value ^^^ pad)
 
 /-- Unmasking algorithm: returns `masked ^^^ pad`. -/

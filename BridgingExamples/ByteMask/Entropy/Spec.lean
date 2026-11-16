@@ -5,24 +5,26 @@ namespace byte_mask.Entropy.Spec
 
 open Aeneas Aeneas.Std BridgingExamples
 
-/-- `mask` makes one `fill_bytes` call on the one-byte array `pad`, initially zero. It returns
-`byte`, the byte written into `pad`, together with `value ^^^ byte`, and the state left by the
-call. -/
-theorem mask_spec {R : Type} (inst : rand_core.RngCore R) (state : R) (value : U8) :
-    mask inst state value =
-      (do let pad := Array.repeat 1#usize 0#u8
-          let (state, filled) ← inst.fill_bytes state pad.to_slice
-          let byte := (pad.from_slice filled)[0]!
-          Result.ok ((byte, value ^^^ byte), state)) := by
-  unfold mask
-  simp only [lift, Array.to_slice_mut, bind_ok, uncurry_eq]
-  congr 1
-  funext filled
-  obtain ⟨state, filled⟩ := filled
-  have hbound : (0#usize).val < (Array.from_slice (Array.repeat 1#usize 0#u8) filled).length := by
-    simp
-  obtain ⟨byte, hbyte, hvalue⟩ := returns (Array.index_usize_spec _ 0#usize hbound)
-  simp [hbyte, hvalue]
+/-- Let `inst` be an implementation of the generator trait `rand_core.RngCore`, with state type
+`R`.
+
+Assumption: for every state and every buffer, `fill_bytes` succeeds and returns a buffer of the
+same length. -/
+def rand_core.RngCore.fill_bytes_assumption {R : Type} (inst : rand_core.RngCore R) : Prop :=
+  ∀ (state : R) (buffer : Slice U8), ∃ (state' : R) (filled : Slice U8),
+    inst.fill_bytes state buffer = Result.ok (state', filled) ∧ filled.length = buffer.length
+
+/-- Let `buffer` be the one-byte buffer `[0u8; 1]`. If `fill_bytes` fills `buffer` with the byte
+`pad` and leaves the state `state'`, then `mask` returns `(pad, value ^^^ pad)` and `state'`. -/
+theorem mask_spec {R : Type} (inst : rand_core.RngCore R) (state state' : R) (value pad : U8)
+    (filled : Slice U8) :
+    let buffer := (Array.repeat 1#usize 0#u8).to_slice
+    inst.fill_bytes state buffer = Result.ok (state', filled) → filled.val = [pad] →
+      mask inst state value = Result.ok ((pad, value ^^^ pad), state') := by
+  intro buffer hfill hpad
+  simp only [buffer] at hfill
+  simp only [mask, lift, Array.to_slice_mut, Aeneas.Std.bind_ok, uncurry_eq, hfill]
+  simp [Array.from_slice, Array.index_usize, hpad]
 
 /-- `unmask` returns `masked ^^^ pad`. -/
 @[step]
