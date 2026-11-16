@@ -54,6 +54,11 @@ def sliceOfVector (buffer : Slice U8) (bytes : List.Vector U8 buffer.length) : S
 @[simp] theorem sliceOfVector_val (buffer : Slice U8) (bytes : List.Vector U8 buffer.length) :
     (sliceOfVector buffer bytes).val = bytes.val := Slice.from_val _ _
 
+/-- A slice of `buffer.length` uniform bytes. -/
+def uniformBytes (buffer : Slice U8) : ProbComp (Slice U8) := do
+  let bytes ← $ᵗ (List.Vector U8 buffer.length)
+  pure (sliceOfVector buffer bytes)
+
 @[simp] theorem uniformSample_byte :
     uniformSample U8 = modelToByte <$> uniformSample (Fin 256) := rfl
 
