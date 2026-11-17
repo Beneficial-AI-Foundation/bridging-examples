@@ -304,8 +304,13 @@ function definitionLines(d, withDoc) {
   pre.className = `code peek${file.html ? ' hl lean' : ''}`;
   pre.innerHTML = rows.slice(n-1, d.end).map((line, i) =>
     `<span class="line"><code>${file.html?.[n-1+i] ?? highlight(line)}</code></span>`).join('');
+  // A tactic's label opens its checkbox by id: give the copied checkboxes ids of their own.
+  const copy = `peek-${++peeks}-`;
+  pre.querySelectorAll('[id]').forEach(el => { el.id = copy + el.id; });
+  pre.querySelectorAll('label[for]').forEach(el => { el.htmlFor = copy + el.htmlFor; });
   return pre;
 }
+let peeks = 0;
 // Definition `d`, then the definitions it uses from `definitions`, directly or not, each once.
 function definitionChain(d, definitions) {
   const chain = [], queue = [d];
@@ -321,13 +326,13 @@ function definitionChain(d, definitions) {
   }
   return chain;
 }
-// A constant defined in one of the example's Lean files (its own or a shared `Common/` file) shows
-// its definition under Verso's type and docstring, followed by the definitions it uses from those
-// files, so it can be read without opening them. Theorems keep the plain hover, which already
-// shows their statement.
+// A constant defined in one of the example's Lean files (its own, a shared `Common/` file or the
+// extraction) shows its definition under Verso's type and docstring, followed by the definitions
+// it uses from those files, so it can be read without opening them. Theorems keep the plain hover,
+// which already shows their statement.
 function peekDefinitions() {
-  const definitions = new Map(data.declarations.filter(d => d.kind !== 'theorem' && data.files[d.file])
-    .map(d => [d.name, d]));
+  const definitions = new Map([...data.declarations, ...data.extracted]
+    .filter(d => d.kind !== 'theorem' && data.files[d.file]).map(d => [d.name, d]));
   document.querySelectorAll('.pane .hl.lean .const.token[data-binding^="const-"]').forEach(el => {
     const d = definitions.get(el.dataset.binding.slice('const-'.length)), tip = el._tippy;
     if (!d || !tip || tip.peek) return;
