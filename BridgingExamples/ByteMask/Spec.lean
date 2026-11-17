@@ -2,7 +2,7 @@ import BridgingExamples.ByteMask.Aeneas
 import Common.Result
 import Common.Metadata
 
-namespace byte_mask.Oracle.Spec
+namespace byte_mask.Spec
 
 open Aeneas Aeneas.Std BridgingExamples
 
@@ -36,4 +36,4 @@ theorem unmask_mask (pad v : U8) : unmask pad (v ^^^ pad) = Result.ok v := by
   apply UScalar.eq_of_val_eq
   simp
 
-end byte_mask.Oracle.Spec
+end byte_mask.Spec

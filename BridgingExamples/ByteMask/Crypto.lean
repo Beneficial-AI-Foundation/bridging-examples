@@ -2,7 +2,7 @@ import BridgingExamples.ByteMask.Aeneas
 import Common.Byte
 import VCVio.OracleComp.ProbComp.Basic
 
-namespace byte_mask.Oracle.Crypto
+namespace byte_mask.Crypto
 
 open Aeneas.Std
 
@@ -14,4 +14,4 @@ def mask (v : U8) : ProbComp (U8 × U8) := do
 /-- Remove the pad from a masked byte. -/
 def unmask (pad masked : U8) : ProbComp U8 := pure (masked ^^^ pad)
 
-end byte_mask.Oracle.Crypto
+end byte_mask.Crypto

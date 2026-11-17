@@ -1,5 +1,5 @@
-import BridgingExamples.ByteMask.Oracle.Spec
-import BridgingExamples.ByteMask.Oracle.Crypto
+import BridgingExamples.ByteMask.Spec
+import BridgingExamples.ByteMask.Crypto
 import Common.Correspondence
 import Common.Metadata
 import Common.Oracle.Tape
@@ -25,7 +25,7 @@ oracle definitions are in `Common/Oracle/Rng.lean`.
 
 namespace byte_mask.Oracle.Bridge
 
-open Aeneas Aeneas.Std BridgingExamples BridgingExamples.Oracle byte_mask.Oracle.Spec OracleSpec
+open Aeneas Aeneas.Std BridgingExamples BridgingExamples.Oracle byte_mask.Spec OracleSpec
   OracleComp
 
 /-! ## `mask` as an oracle program -/
@@ -66,12 +66,6 @@ theorem maskRest_of_val (v x : U8) (b : Slice U8) (hb : b.val = [x]) :
   simp only [maskRest, mask, constRng, constFill, lift, Array.to_slice_mut,
     Aeneas.Std.bind_assoc, Aeneas.Std.bind_ok, uncurry_eq]
   simp [Array.from_slice, Array.index_usize, hb]
-
-/-- `List.Vector.head` is a bijection from byte vectors of length 1 to bytes. -/
-theorem head_bijective : Function.Bijective (List.Vector.head : List.Vector U8 1 → U8) := by
-  refine ⟨fun a b h => ?_, fun x => ⟨x ::ᵥ List.Vector.nil, by simp⟩⟩
-  rw [← List.Vector.cons_head_tail a, ← List.Vector.cons_head_tail b, h,
-    List.Vector.eq_nil a.tail, List.Vector.eq_nil b.tail]
 
 /-- Run with `unifImpl`, `maskProg v` has the distribution of `Result.ok <$> Crypto.mask v`. -/
 @[bridge_for mask]
