@@ -12,6 +12,6 @@ theorem identity_byte_bridge (x : U8) :
     (pure (identity_byte x) : ProbComp _) =ᵈ
     (do let y ← Crypto.identity_byte x
         pure (Result.ok y)) :=
-  bridge_of_spec (Spec.identity_byte_spec x)
+  bridge_of_spec (Spec.identity_byte_spec x) (by simp [identity_byte])
 
 end smoke.Distributional.Bridge

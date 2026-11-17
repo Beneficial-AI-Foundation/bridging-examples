@@ -6,14 +6,16 @@ public section
 
 namespace BridgingExamples
 
-/-- Rust effects have no continuation after failure, so results still have
-exactly the success, failure, and divergence cases. -/
+/-- The cases of a result: success, failure, divergence, and sampling. With the `random` effect of
+`aeneas.patch`, a result can ask for `n` random bytes and continue with `k`. Failure has no
+continuation. -/
 @[elab_as_elim]
 theorem resultCases {α : Type} {motive : Aeneas.Std.Result α → Prop}
     (r : Aeneas.Std.Result α)
     (ok : ∀ a, motive (.ok a))
     (fail : ∀ e, motive (.fail e))
-    (div : motive .div) : motive r := by
+    (div : motive .div)
+    (random : ∀ n k, motive (.vis (.random n) k)) : motive r := by
   cases r with
   | ret a => exact ok a
   | div => exact div
@@ -23,6 +25,20 @@ theorem resultCases {α : Type} {motive : Aeneas.Std.Result α → Prop}
       have hk : k = PEmpty.elim := by funext x; exact PEmpty.elim x
       subst k
       exact fail e
+    | random n => exact random n k
+
+@[simp] theorem ok_ne_vis {α : Type} (a : α) (e : Aeneas.Std.RustEffect.Input) (k) :
+    Aeneas.Std.Result.ok a ≠ Aeneas.Std.Result.vis e k := by
+  intro h
+  have := congrArg Aeneas.Std.Result.match h
+  simp [Aeneas.Std.Result.match.ok, Aeneas.Std.Result.match.vis] at this
+
+/-- `m` does not start by sampling. -/
+def NoSample {α : Type} (m : Aeneas.Std.Result α) : Prop :=
+  ∀ n k, m ≠ Aeneas.Std.Result.vis (.random n) k
+
+@[simp] theorem noSample_ok {α : Type} (a : α) : NoSample (Aeneas.Std.Result.ok a) :=
+  fun _ k => ok_ne_vis a _ k
 
 @[simp] theorem resultMapOk {α β : Type} (f : α → β) (a : α) :
     f <$> Aeneas.Std.Result.ok a = Aeneas.Std.Result.ok (f a) := by
@@ -45,13 +61,16 @@ theorem resultCases {α : Type} {motive : Aeneas.Std.Result α → Prop}
   cases p
   rfl
 
-/-- A specification is a successful return satisfying the postcondition. -/
-theorem returns {α : Type} {m : Aeneas.Std.Result α} {p : α → Prop} (h : Aeneas.Std.WP.spec m p) :
-    ∃ value, m = Aeneas.Std.Result.ok value ∧ p value := by
+/-- A specification of a result that does not start by sampling is a successful return satisfying
+the postcondition. `NoSample` is needed because `spec` is demonic on the `random` effect: it holds
+if every sampled path satisfies the postcondition. -/
+theorem returns {α : Type} {m : Aeneas.Std.Result α} {p : α → Prop} (h : Aeneas.Std.WP.spec m p)
+    (hm : NoSample m) : ∃ value, m = Aeneas.Std.Result.ok value ∧ p value := by
   induction m using resultCases with
   | ok value => exact ⟨value, rfl, (Aeneas.Std.WP.spec_ok value).mp h⟩
   | fail e => simp at h
   | div => simp at h
+  | random n k => exact absurd rfl (hm n k)
 
 /-- Use all result events when comparing output distributions. -/
 instance {α : Type} : MeasurableSpace (Aeneas.Std.Result α) := ⊤

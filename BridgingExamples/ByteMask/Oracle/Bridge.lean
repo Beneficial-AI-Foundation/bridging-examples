@@ -121,6 +121,6 @@ theorem unmask_bridge (pad masked : U8) :
     (pure (unmask pad masked) : ProbComp _) =ᵈ
     (do let r ← Crypto.unmask pad masked
         pure (Result.ok r)) :=
-  bridge_of_spec (Spec.unmask_spec pad masked)
+  bridge_of_spec (Spec.unmask_spec pad masked) (by simp [unmask])
 
 end byte_mask.Oracle.Bridge

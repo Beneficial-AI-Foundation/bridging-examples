@@ -22,3 +22,18 @@ See [explorer](https://beneficial-ai-foundation.github.io/bridging-examples/).
 - [**Encrypt then Mac**](https://beneficial-ai-foundation.github.io/bridging-examples/#example=EtM): Encrypt then Mac with sampled nonces.
 - [**One Time Pad**](https://beneficial-ai-foundation.github.io/bridging-examples/#example=OneTimePad): one-time pad encryption of 16-byte blocks.
 - [**Lazy Oracle**](https://beneficial-ai-foundation.github.io/bridging-examples/#example=LazyOracle): a finite lazy oracle with a generic mutable RNG interface.
+
+## Patched Aeneas
+
+The Lean code builds against the Aeneas Lean library with `aeneas.patch` applied. The patch is
+from [toy-bridge](https://github.com/Beneficial-AI-Foundation/toy-bridge). It adds a `random`
+effect to `Result`: `Result.random n` asks for `n` random bytes. The `Effect` bridges of
+ProbSmoke and ByteMask use it. The extracted code does not change, so extraction uses the pinned
+release binaries.
+
+Before you run `lake build`, run this command once. It clones Aeneas into `aeneas/` at the
+pinned commit and applies the patch:
+
+```bash
+bash scripts/aeneas.sh
+```
