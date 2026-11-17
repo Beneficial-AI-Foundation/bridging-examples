@@ -119,7 +119,7 @@ export function discover(base = root, configs = examples(base)) {
   }
   return configs.map(config => {
     const example = { ...config, name: config.name || config.id.replace(/(?<=[a-z])(?=[A-Z])/g, ' '),
-      files: {}, declarations: [], items: [], extraction: 'missing', coverage: null,
+      files: {}, declarations: [], extracted: [], items: [], extraction: 'missing', coverage: null,
       revision: check?.revision, dirty: check?.dirty, repository: check?.repository };
     const crateDoc = `${config.rust}/src/lib.rs`;
     example.description = existsSync(resolve(base, crateDoc)) ? read(crateDoc).match(/^\/\/! ?(.+)$/m)?.[1] || '' : '';
@@ -220,10 +220,15 @@ export function discover(base = root, configs = examples(base)) {
     for (const d of declarations) {
       const path = `${d.module.replaceAll('.', '/')}.lean`;
       const source = example.files[path];
-      if (!source || ['rust', 'aeneas'].includes(source.stage) || ['constructor', 'recursor'].includes(d.kind)) continue;
+      if (!source || source.stage === 'rust' || ['constructor', 'recursor'].includes(d.kind)) continue;
       // Skip declarations generated from a parent: same range, or Aeneas's `step` companion.
       if (declarations.some(parent => parent.name !== d.name && d.name.startsWith(parent.name + '.') && parent.module === d.module &&
         (parent.start === d.start && parent.end === d.end || d.name.endsWith('.mvcgen_spec')))) continue;
+      // Extracted definitions belong to no stage's declarations, but a hover of their name shows them.
+      if (source.stage === 'aeneas') {
+        if (d.kind === 'definition') example.extracted.push({ name: d.name, kind: d.kind, file: path, start: d.start, end: d.end });
+        continue;
+      }
       example.declarations.push({ ...d, file: path, stage: source.stage, method: source.method, ...declarationEvidence(d, opaqueFunctions) });
     }
     example.declarations.sort((a,b) => a.file.localeCompare(b.file) || a.start-b.start || a.name.localeCompare(b.name));
