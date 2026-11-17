@@ -5,6 +5,7 @@ import VCVio.OracleComp.Constructions.SampleableType.Measure
 namespace BridgingExamples
 
 open Aeneas.Std
+open scoped ENNReal
 
 /-- The value of a byte in `0..255`. -/
 def byteToModel (value : U8) : Fin 256 := value.bv.toFin
@@ -63,6 +64,34 @@ theorem vector_length_le (buffer : Slice U8) (bytes : List.Vector U8 buffer.leng
 def uniformBytes (buffer : Slice U8) : ProbComp (Slice U8) := do
   let bytes ← $ᵗ (List.Vector U8 buffer.length)
   pure (Slice.from bytes.val (vector_length_le buffer bytes))
+
+/-- `uniformBytes buffer` is uniform on the slices of length `buffer.length`: it returns each of
+them with probability `(256 ^ buffer.length)⁻¹`, and never a slice of another length. -/
+theorem prEvent_uniformBytes (buffer s : Slice U8) :
+    Pr{let filled ← uniformBytes buffer}[filled = s] =
+      if s.length = buffer.length then (256 ^ buffer.length : ℝ≥0∞)⁻¹ else 0 := by
+  have hmap : uniformBytes buffer =
+      (fun bytes => Slice.from bytes.val (vector_length_le buffer bytes)) <$>
+        ($ᵗ (List.Vector U8 buffer.length)) := by
+    simp [uniformBytes, map_eq_bind_pure_comp]
+  rw [hmap, prEvent_map]
+  split_ifs with h
+  · calc
+      _ = Pr{let bytes ← $ᵗ (List.Vector U8 buffer.length)}[bytes = ⟨s.val, h⟩] :=
+          prEvent_congr _ _ _ fun bytes => by
+            constructor
+            · rintro rfl; exact Subtype.ext (Slice.from_val _ _).symm
+            · rintro rfl; exact Slice.val_from s _
+      _ = (Nat.card (List.Vector U8 buffer.length) : ℝ≥0∞)⁻¹ :=
+          SampleableType.prEvent_uniformSample_eq_singleton_natCard _
+      _ = (256 ^ buffer.length : ℝ≥0∞)⁻¹ := by
+          rw [Nat.card_congr vectorEquiv, Nat.card_fun, Nat.card_congr byteEquiv]
+          simp
+  · apply prEvent_eq_zero_of_forall_not
+    intro bytes hb
+    apply h
+    rw [← hb]
+    simp [Slice.length, bytes.property]
 
 @[simp] theorem uniformSample_byte :
     uniformSample U8 = modelToByte <$> uniformSample (Fin 256) := rfl
