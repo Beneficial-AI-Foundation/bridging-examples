@@ -18,6 +18,12 @@ A bridge then has two parts:
 2. the model, run with uniform bytes (`uniformImpl`), has the distribution of the Crypto
    definition.
 
+The two parts do not give a distribution of the extracted `Result` itself. Aeneas gives
+`Result.random` no probabilities: its `spec` holds if the postcondition holds for all bytes. Part 2
+reads each `random` node as uniform bytes, but only on the model side. A theorem about the
+extracted code needs an interpreter of `Result` that samples uniformly at each `random` node, and
+a proof that it agrees with `uniformImpl` on `toResult` of a model. This file does not have it.
+
 `toResult` and `RandSpec` come from https://github.com/Beneficial-AI-Foundation/toy-bridge.
 -/
 
@@ -103,13 +109,20 @@ def sliceOfBytes (buffer : Slice U8) (b : Bytes buffer.length) : Slice U8 :=
     sliceOfBytes buffer (bytesOfVector v) = sliceOfVector buffer v := by
   simp [sliceOfBytes]
 
-/-- `RandomFill fill`: on a buffer of `k` bytes, `fill` samples `k` bytes with `Result.random`,
-returns them in the buffer, and leaves the state unchanged. It never fails.
+/-- `RandomFill fill`: for every state and every buffer of `k` bytes, `fill` asks for `k` bytes with
+`Result.random`, returns them in the buffer, and returns the state unchanged. It never fails.
 
 This is toy-bridge's `OsRngDoesNotFail`, stated for the generic `fill_bytes`, because the Rust
-code of the examples does not call `OsRng`. The state does not change, so the generator holds no
-entropy: each call samples fresh bytes. A generator that computes its bytes from its state, such
-as a seeded PRG, does not satisfy it. -/
+code of the examples does not call `OsRng`.
+
+No deterministic `fill` satisfies it on an inhabited state type, because a result without a
+`random` node is not equal to `Result.random`. So no extracted Rust implementation satisfies it,
+because Aeneas does not generate `Result.random`. A Lean definition that samples with
+`Result.random` does: the right-hand side satisfies it by `rfl`. It also excludes a generator that
+samples with `Result.random` but changes its state, for example a call counter.
+
+The equation does not say that the bytes are uniform, or independent between calls. That is the
+reading of `random` nodes by `uniformImpl` on the model side. -/
 def RandomFill {R : Type} (fill : Fill R) : Prop :=
   ∀ (rng : R) (buffer : Slice U8),
     fill rng buffer = Aeneas.Std.bind (Result.random buffer.length) fun b =>

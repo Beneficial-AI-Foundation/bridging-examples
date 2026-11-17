@@ -15,10 +15,15 @@ extracted `mask` does not change. The bridge has two steps.
 2. `maskModel_bridge`: `maskModel`, run with uniform bytes (`uniformImpl`), has the distribution
    of `Crypto.mask`.
 
-`RandomFill` is the only Lean assumption on the generator. Compare with the Oracle bridge: there is
-no sampled state, no byte budget, and no generator built from the answer of a query
-(`constRng`), because the bytes come from the effect and not from the state. The definitions are
-in `Common/Effect/Random.lean`.
+`RandomFill` is the only Lean assumption on the generator. Compare with the Oracle bridge:
+
+- Its equality `mask_eq_prog` holds for every generator, with no assumption, final state
+  included. The equality here needs `RandomFill`.
+- Its assumption is on the distribution of a sampled state, with a byte budget. Here there is no
+  sampled state, no byte budget and no generator built from the answer of a query (`constRng`),
+  because the bytes come from the effect.
+- Its `mask_bridge` states the distribution of the extracted code. Here only the model has a
+  distribution (see `Common/Effect/Random.lean`).
 -/
 
 namespace byte_mask.Effect.Bridge

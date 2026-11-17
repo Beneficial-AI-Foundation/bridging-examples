@@ -31,6 +31,10 @@ effect to `Result`: `Result.random n` asks for `n` random bytes. The `Effect` br
 ProbSmoke and ByteMask use it. The extracted code does not change, so extraction uses the pinned
 release binaries.
 
+Warning: if you use `mvcgen` on a computation that starts with `Result.random`, the triple says
+nothing. The patch gives such a computation the precondition `True`, so the triple holds for any
+postcondition. Use `step` on code that samples.
+
 Before you run `lake build`, run this command once. It clones Aeneas into `aeneas/` at the
 pinned commit and applies the patch:
 

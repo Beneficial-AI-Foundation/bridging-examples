@@ -14,9 +14,14 @@ extracted `fill_random` does not change. The bridge has two steps.
 2. `fillModel_bridge`: `fillModel`, run with uniform bytes (`uniformImpl`), has the distribution
    of `Crypto.fill_random`.
 
-`RandomFill` is the only Lean assumption on the generator. Compare with the Oracle bridge: there is
-no sampled state and no byte budget, because the bytes come from the effect and not from the
-state. The definitions are in `Common/Effect/Random.lean`.
+`RandomFill` is the only Lean assumption on the generator. Compare with the Oracle bridge:
+
+- Its equality `fill_random_eq_prog` holds for every generator, with no assumption, final state
+  included. The equality here needs `RandomFill`.
+- Its assumption is on the distribution of a sampled state, with a byte budget. Here there is no
+  sampled state and no byte budget, because the bytes come from the effect.
+- Its `fill_random_bridge` states the distribution of the extracted code. Here only the model has
+  a distribution (see `Common/Effect/Random.lean`).
 -/
 
 namespace prob_smoke.Effect.Bridge
