@@ -44,6 +44,19 @@ try {
           assert(new URL(await page.url()).hash.includes(`method=${method.id}`));
           if (method.items.some(i => i.id === selected)) assert.equal(await page.locator('#item-picker').inputValue(), selected);
         }
+        // Comparing draws the other method's panels below, and stopping removes them.
+        if (example.methods.length > 1) {
+          const [first, second] = example.methods;
+          await page.locator('#method-picker').selectOption(first.id);
+          await page.locator('#compare-picker').selectOption(second.id);
+          // Only the panels whose file differs from the row above are drawn.
+          const shown = await page.locator('#panes-compare .pane').count();
+          assert(shown >= 1 && shown < stages.length);
+          assert.equal(await page.locator('#panes-compare [data-source="bridge"]').inputValue(), `${example.dir}/${second.id}/Bridge.lean`);
+          assert(new URL(await page.url()).hash.includes(`compare=${second.id}`));
+          await page.locator('#compare-picker').selectOption('');
+          assert(await page.locator('#panes-compare').isHidden());
+        }
         await page.locator('#focus-declaration').click();
         assert.equal(await page.locator('#focus-declaration').getAttribute('aria-pressed'), 'true');
         await page.locator('#focus-declaration').click();
