@@ -7,12 +7,14 @@ open Aeneas.Std
 
 namespace BridgingExamples
 
-/-- A deterministic bridge from a functional specification. -/
-theorem bridge_of_spec {α : Type} {m : Result α} {value : α} (h : WP.spec m (· = value)) :
+/-- A deterministic bridge from a functional specification, for a result that does not start by
+sampling. -/
+theorem bridge_of_spec {α : Type} {m : Result α} {value : α} (h : WP.spec m (· = value))
+    (hm : NoSample m) :
     (pure m : ProbComp (Result α)) =ᵈ
     (do let result ← (pure value : ProbComp α)
         pure (Result.ok result)) := by
-  obtain ⟨_, hm, rfl⟩ := returns h
+  obtain ⟨_, hm, rfl⟩ := returns h hm
   simp [hm]
 
 /-- Continue after a call whose distribution on `entropy` is known. -/

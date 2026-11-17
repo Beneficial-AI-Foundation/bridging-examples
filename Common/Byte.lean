@@ -54,6 +54,12 @@ def sliceOfVector (buffer : Slice U8) (bytes : List.Vector U8 buffer.length) : S
 @[simp] theorem sliceOfVector_val (buffer : Slice U8) (bytes : List.Vector U8 buffer.length) :
     (sliceOfVector buffer bytes).val = bytes.val := Slice.from_val _ _
 
+/-- `List.Vector.head` is a bijection from byte vectors of length 1 to bytes. -/
+theorem head_bijective : Function.Bijective (List.Vector.head : List.Vector U8 1 → U8) := by
+  refine ⟨fun a b h => ?_, fun x => ⟨x ::ᵥ List.Vector.nil, by simp⟩⟩
+  rw [← List.Vector.cons_head_tail a, ← List.Vector.cons_head_tail b, h,
+    List.Vector.eq_nil a.tail, List.Vector.eq_nil b.tail]
+
 @[simp] theorem uniformSample_byte :
     uniformSample U8 = modelToByte <$> uniformSample (Fin 256) := rfl
 

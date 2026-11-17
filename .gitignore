@@ -1,5 +1,7 @@
 /.lake/
 /.tools/
+# The patched Aeneas checkout, made by scripts/aeneas.sh
+/aeneas/
 /BridgingExamples/*/rust/target/
 # The explorer page is built by scripts/check.sh and published by CI, not committed
 /explorer/site/
