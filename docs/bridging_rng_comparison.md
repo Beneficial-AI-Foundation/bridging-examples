@@ -1,7 +1,6 @@
 ---
 title: "Implementation bridges and RNG models"
 date: "17 November 2026"
-lang: en-GB
 ---
 
 ## 1. Jasmin: from random-byte calls to security statements
