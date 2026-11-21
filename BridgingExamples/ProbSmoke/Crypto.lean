@@ -1,16 +1,20 @@
 import BridgingExamples.ProbSmoke.Aeneas
 import Common.Byte
+import Common.Metadata
 
 namespace prob_smoke.Crypto
 
-open Aeneas.Std
+open Aeneas.Std BridgingExamples
 
-/-- `length` uniform bytes. -/
-def rand_core.RngCore.fill_bytes (length : ℕ) : ProbComp (List.Vector U8 length) :=
-  uniformSample (List.Vector U8 length)
+/-- Ideal model of `fill_bytes`: when `n` bytes can still be drawn, it fills `buffer` with
+uniform bytes and returns the new number `n - buffer.length`. -/
+@[crypto_for rand_core.RngCore.fill_bytes]
+def fill_bytes (n : ℕ) (buffer : Slice U8) : ProbComp (ℕ × Slice U8) := do
+  let filled ← uniformByteSlice buffer
+  pure (n - buffer.length, filled)
 
-/-- `length` bytes drawn with `fill_bytes`. -/
-def fill_random (length : ℕ) : ProbComp (List.Vector U8 length) :=
-  rand_core.RngCore.fill_bytes length
+/-- Ideal model of `fill_random`: one call of `fill_bytes`. -/
+def fill_random (n : ℕ) (buffer : Slice U8) : ProbComp (ℕ × Slice U8) :=
+  fill_bytes n buffer
 
 end prob_smoke.Crypto
