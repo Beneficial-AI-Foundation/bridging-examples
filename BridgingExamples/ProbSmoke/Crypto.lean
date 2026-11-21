@@ -10,7 +10,7 @@ open Aeneas.Std BridgingExamples
 uniform bytes and returns the new number `n - buffer.length`. -/
 @[crypto_for rand_core.RngCore.fill_bytes]
 def fill_bytes (n : ℕ) (buffer : Slice U8) : ProbComp (ℕ × Slice U8) := do
-  let filled ← uniformBytes buffer
+  let filled ← uniformByteSlice buffer
   pure (n - buffer.length, filled)
 
 /-- Ideal model of `fill_random`: one call of `fill_bytes`. -/

@@ -61,19 +61,19 @@ theorem vector_length_le (buffer : Slice U8) (bytes : List.Vector U8 buffer.leng
   rw [bytes.property]; exact buffer.property
 
 /-- A slice of `buffer.length` uniform bytes. -/
-def uniformBytes (buffer : Slice U8) : ProbComp (Slice U8) := do
+def uniformByteSlice (buffer : Slice U8) : ProbComp (Slice U8) := do
   let bytes ← $ᵗ (List.Vector U8 buffer.length)
   pure (Slice.from bytes.val (vector_length_le buffer bytes))
 
-/-- `uniformBytes buffer` is uniform on the slices of length `buffer.length`: it returns each of
+/-- `uniformByteSlice buffer` is uniform on the slices of length `buffer.length`: it returns each of
 them with probability `(256 ^ buffer.length)⁻¹`, and never a slice of another length. -/
-theorem prEvent_uniformBytes (buffer s : Slice U8) :
-    Pr{let filled ← uniformBytes buffer}[filled = s] =
+theorem prEvent_uniformByteSlice (buffer s : Slice U8) :
+    Pr{let filled ← uniformByteSlice buffer}[filled = s] =
       if s.length = buffer.length then (256 ^ buffer.length : ℝ≥0∞)⁻¹ else 0 := by
-  have hmap : uniformBytes buffer =
+  have hmap : uniformByteSlice buffer =
       (fun bytes => Slice.from bytes.val (vector_length_le buffer bytes)) <$>
         ($ᵗ (List.Vector U8 buffer.length)) := by
-    simp [uniformBytes, map_eq_bind_pure_comp]
+    simp [uniformByteSlice, map_eq_bind_pure_comp]
   rw [hmap, prEvent_map]
   split_ifs with h
   · calc
