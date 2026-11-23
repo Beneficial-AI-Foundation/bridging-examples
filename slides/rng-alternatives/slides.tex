@@ -160,7 +160,7 @@
   \slidebullets{
     \item Generators typically come with a random state prefilled and behave deterministically afterwards.
     \item With Aeneas today, extracted code is deterministic. Randomness can only enter through its inputs, such as the starting state.
-    \item Approaches 1 to 3 sample the starting state of the generator. Approach 4 extends Aeneas so that \code{fill\_bytes} samples its bytes when it runs.}
+    \item Approaches 1 to 3 sample the starting state of the generator. Approach 4 adds a sampling step to Aeneas, and assumes that \code{fill\_bytes} uses it.}
   \vfill
 \end{frame}
 
@@ -389,7 +389,7 @@
     \node[font=\small\bfseries, text=proofc] at (-4.6, 0.6) {3 \code{IdealRng}};
     \node[trust, text width=4.0cm, minimum height=1.3cm] at (-4.6, -0.3) {all answers of a program\\look uniform};
     \node[font=\small\bfseries, text=proofc] at (0, 0.6) {2 \code{EntropyRng}};
-    \node[trust, text width=4.0cm, minimum height=1.3cm] at (0, -0.3) {each call on a state\\gives uniform bytes};
+    \node[trust, text width=4.0cm, minimum height=1.3cm] at (0, -0.3) {each call on a sampled state\\gives uniform bytes};
     \node[font=\small\bfseries, text=proofc] at (4.6, 0.6) {4 \code{RandomFill}};
     \node[trust, text width=4.0cm, minimum height=1.3cm] at (4.6, -0.3) {each call asks\\\code{Result.random}};
     \node[label, text width=3.8cm] at (-4.6, -1.6) {global, with a budget\\randomness in the state\\Aeneas unchanged};
