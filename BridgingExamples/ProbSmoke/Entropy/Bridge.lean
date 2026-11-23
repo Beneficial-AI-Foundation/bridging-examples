@@ -38,8 +38,9 @@ def fill_bytes_assumption {R : Type} (rngCore : rand_core.RngCore R)
 * `statesRng` be a family of distributions on `R`: `statesRng n` is the distribution of the
   generator state when `n` bytes can still be drawn.
 
-Bridge theorem: for all `n` and every buffer of length `k`, from a state drawn from
-`statesRng (n + k)`, `prob_smoke.fill_random`
+Bridge theorem: under the bridge assumption `fill_bytes_assumption rngCore statesRng`, for all `n`
+and every buffer of length `k`, from a state drawn from `statesRng (n + k)`,
+`prob_smoke.fill_random`
 * fills the buffer with uniform bytes, as `Crypto.fill_random` does;
 * returns a state drawn from `statesRng n`, independent of those bytes. -/
 theorem fill_random_bridge {R : Type} (rngCore : rand_core.RngCore R)
