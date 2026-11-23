@@ -32,6 +32,12 @@ namespace one_time_pad.Oracle.Security
 
 open Aeneas.Std BridgingExamples one_time_pad.Oracle.Crypto one_time_pad.Oracle.Bridge
 
+/-- `Crypto.otp.keygen` samples a uniform key. -/
+theorem otp_keygen_eq : (otp.keygen : ProbComp Block) = $ᵗ Block := by
+  show _ = (arrayEquiv (n := 16#usize)).symm <$> ($ᵗ (List.Vector U8 16))
+  rw [map_eq_bind_pure_comp]
+  rfl
+
 /-- Under `Crypto.otp`, every message gives the same ciphertext distribution. -/
 theorem otp_ciphertextRowsEqual : otp.ciphertextRowsEqualAt := by
   let : MeasurableSpace Block := ⊤
@@ -44,7 +50,8 @@ theorem otp_ciphertextRowsEqual : otp.ciphertextRowsEqualAt := by
     apply UScalar.eq_of_val_eq
     simp [UScalar.val_xor]
   exact SymmEncAlg.ciphertextRowsEqualAt_of_uniformKey_of_bijective otp xor
-    SampleableType.evalDist_uniformSample (fun _ _ => evalDist_pure _) hxor
+    (by rw [otp_keygen_eq]; exact SampleableType.evalDist_uniformSample)
+    (fun _ _ => evalDist_pure _) hxor
 
 /-- `Crypto.otp` is perfectly secret: for every message sampler whose distribution has total
 mass 1, the message and the ciphertext are independent. -/
@@ -106,7 +113,7 @@ theorem rustOtp_complete {R : Type} (inst : rand_core.CryptoRng R) (seed : ProbC
       (fun _ => some message) <$> otp.keygen := by
     simp [map_eq_bind_pure_comp, hg]
   let : MeasurableSpace Block := ⊤
-  rw [e, hk.evalDist_eq, hc, evalDist_map_const]
-  simp [otp]
+  rw [e, hk.evalDist_eq, hc, evalDist_map_const, otp_keygen_eq]
+  simp
 
 end one_time_pad.Oracle.Security
