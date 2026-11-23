@@ -14,10 +14,12 @@ open Aeneas Aeneas.Std BridgingExamples
 * `statesRng` be a family of distributions on `R`: `statesRng n` is the distribution of the
   generator state when `n` bytes can still be drawn.
 
-Assumption: for all `n` and every buffer of length `k`, `fill_bytes` from a state drawn from
-`statesRng (n + k)` has the distribution of `Crypto.fill_bytes` from `n + k`, with the returned
-number `n` replaced by a state drawn from `statesRng n`. So a state drawn from `statesRng n` has at
-least `n` bytes of entropy. -/
+Bridge assumption: for all `n` and every buffer of length `k`, from a state drawn from
+`statesRng (n + k)`, `rngCore.fill_bytes`
+* fills the buffer with uniform bytes, as `Crypto.fill_bytes` does;
+* returns a state drawn from `statesRng n`, independent of those bytes.
+
+So a state drawn from `statesRng n` has at least `n` bytes of entropy. -/
 @[assumption_for rand_core.RngCore.fill_bytes]
 def fill_bytes_assumption {R : Type} (rngCore : rand_core.RngCore R)
     (statesRng : ℕ → ProbComp R) : Prop :=
@@ -36,9 +38,10 @@ def fill_bytes_assumption {R : Type} (rngCore : rand_core.RngCore R)
 * `statesRng` be a family of distributions on `R`: `statesRng n` is the distribution of the
   generator state when `n` bytes can still be drawn.
 
-Bridge: for all `n` and every buffer of length `k`, `prob_smoke.fill_random` from a state drawn
-from `statesRng (n + k)` has the distribution of `Crypto.fill_random` from `n + k`, with the
-returned number `n` replaced by a state drawn from `statesRng n`. -/
+Bridge theorem: for all `n` and every buffer of length `k`, from a state drawn from
+`statesRng (n + k)`, `prob_smoke.fill_random`
+* fills the buffer with uniform bytes, as `Crypto.fill_random` does;
+* returns a state drawn from `statesRng n`, independent of those bytes. -/
 theorem fill_random_bridge {R : Type} (rngCore : rand_core.RngCore R)
     (statesRng : ℕ → ProbComp R) (h : fill_bytes_assumption rngCore statesRng)
     (buffer : Slice U8) (n : ℕ) :
