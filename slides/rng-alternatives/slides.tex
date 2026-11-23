@@ -97,10 +97,10 @@
     \node[tool, text width=1.2cm, minimum height=1.3cm] (app) at (0, 0) {app};
     \node[impl, text width=2.6cm, minimum height=1.3cm] (entry) at (2.9, 0) {libsignal\\creates \code{OsRng}};
     \node[impl, text width=2.8cm, minimum height=1.3cm] (send) at (6.9, 0) {\code{spqr::send<R>}\\calls \code{fill\_bytes}};
-    \node[trust, text width=1.4cm, minimum height=1.3cm] (os) at (11.9, 0) {kernel};
+    \node[trust, text width=1.4cm, minimum height=1.3cm] (os) at (11.9, 0) {OS};
     \draw[flow] (app) -- (entry);
     \draw[flow] (entry) -- node[above, label] {\code{OsRng}} (send);
-    \draw[flow, trustc] ($(send.east)+(0,0.25)$) -- node[above, label, text=trustc] {system call} ($(os.west)+(0,0.25)$);
+    \draw[flow, trustc] ($(send.east)+(0,0.25)$) -- node[above, label, text=trustc] {OS call} ($(os.west)+(0,0.25)$);
     \draw[flow, trustc] ($(os.west)+(0,-0.25)$) -- node[below, label, text=trustc] {random bytes} ($(send.east)+(0,-0.25)$);
     \draw[decorate, decoration={brace, amplitude=5pt, mirror}, realc, thick]
       (entry.west |- 0,-0.95) -- (send.east |- 0,-0.95)
@@ -111,9 +111,9 @@
   \end{tikzpicture}
   \vfill
   \slidebullets{
-    \item Inside \code{send}, each \code{fill\_bytes} on \code{OsRng} is a system call.
-    \item \code{OsRng} is an empty Rust struct: it stores no seed and no bytes. All its bytes come from the kernel.
-    \item All four approaches below trust the kernel: \textcolor{trustc}{``its bytes are uniform''}. Lean cannot check this.}
+    \item Inside \code{send}, each \code{fill\_bytes} on \code{OsRng} asks the operating system (OS) for bytes.
+    \item \code{OsRng} is an empty Rust struct: it stores no seed and no bytes. All its bytes come from the OS.
+    \item All four approaches below trust the OS: \textcolor{trustc}{``its bytes are uniform''}. Lean cannot check this.}
   \vfill
 \end{frame}
 
@@ -396,7 +396,7 @@
     \draw[->, thick, trustc] (-6.4, -2.6) -- node[below, label, text=trustc] {from whole programs to single calls} (6.4, -2.6);
   \end{tikzpicture}
 
-  \slidenote{In all three, ``\code{OsRng} meets the assumption'' stays outside Lean.}
+  \slidenote{4: ``\code{OsRng} meets H(G)'' stays outside Lean. 2 and 3: the stateless \code{OsRng} meets neither. The state must hold the bytes.}
   \vfill
 \end{frame}
 
