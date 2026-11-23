@@ -64,12 +64,13 @@ const Explorer = {
       !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
   },
   // What `item` highlights in `stage`: its Rust or Aeneas range, or its linked declarations,
-  // with its assumptions and hypotheses in Spec and Bridge.
+  // with its own assumptions in Spec and Bridge. A trait method also highlights the assumptions
+  // of its trait; an assumption that a theorem only takes as a hypothesis belongs to another atom.
   entries(example, item, stage) {
     if (!item) return [];
     if (stage === 'rust' || stage === 'aeneas') return item[stage] ? [item[stage]] : [];
-    const names = [...(item[stage] || []),
-      ...(['spec', 'bridge'].includes(stage) ? [...(item.assumptions || []), ...(item.hypotheses || [])] : [])];
+    const own = [...(item.assumptions || []), ...(item.trait ? item.hypotheses || [] : [])];
+    const names = [...(item[stage] || []), ...(['spec', 'bridge'].includes(stage) ? own : [])];
     return example.declarations.filter(d => d.stage === stage && names.includes(d.name));
   },
   // The line ranges drawn: the whole file, or the `selected` ranges with adjacent ones merged.
