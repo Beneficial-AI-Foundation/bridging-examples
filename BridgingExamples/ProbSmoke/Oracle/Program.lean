@@ -1,5 +1,5 @@
 import BridgingExamples.ProbSmoke.Spec
-import BridgingExamples.ProbSmoke.Crypto
+import BridgingExamples.ProbSmoke.Oracle.Crypto
 import Common.Oracle.Rng
 
 /-!

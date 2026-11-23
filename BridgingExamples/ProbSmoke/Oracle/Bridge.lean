@@ -1,5 +1,4 @@
 import BridgingExamples.ProbSmoke.Oracle.Program
-import Common.Metadata
 import Common.Oracle.Tape
 
 /-!
