@@ -103,7 +103,7 @@
     \draw[flow, trustc] ($(send.east)+(0,0.25)$) -- node[above, label, text=trustc] {OS call} ($(os.west)+(0,0.25)$);
     \draw[flow, trustc] ($(os.west)+(0,-0.25)$) -- node[below, label, text=trustc] {random bytes} ($(send.east)+(0,-0.25)$);
     \draw[decorate, decoration={brace, amplitude=5pt, mirror}, realc, thick]
-      (entry.west |- 0,-0.95) -- (send.east |- 0,-0.95)
+      (send.west |- 0,-0.95) -- (send.east |- 0,-0.95)
       node[midway, below=6pt, label, text=realc] {Aeneas sees this};
     \draw[decorate, decoration={brace, amplitude=5pt, mirror}, trustc, thick]
       (os.west |- 0,-0.95) -- (os.east |- 0,-0.95)
@@ -396,7 +396,7 @@
     \draw[->, thick, trustc] (-6.4, -2.6) -- node[below, label, text=trustc] {from whole programs to single calls} (6.4, -2.6);
   \end{tikzpicture}
 
-  \slidenote{4: ``\code{OsRng} meets H(G)'' stays outside Lean. 2 and 3: the stateless \code{OsRng} meets neither. The state must hold the bytes.}
+  \slidenote{4: ``\code{OsRng} meets H(G)'' stays outside Lean. 2 and 3: the stateless \code{OsRng} meets neither. The randomness must come from the state.}
   \vfill
 \end{frame}
 
