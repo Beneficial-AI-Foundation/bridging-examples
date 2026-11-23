@@ -69,9 +69,6 @@ def unifImpl : QueryImpl FillSpec ProbComp := fun s => do
   let v ← $ᵗ (List.Vector U8 s.length)
   pure (sliceOfVector s v)
 
-/-- The stateless generator that answers every query with `b`. -/
-def constFill (b : Slice U8) : Fill Unit := fun _ _ => Result.ok ((), b)
-
 /-- `ByteBound p n`: on every path, the queries of `p` ask for at most `n` bytes in total. The
 query `s` asks for `s.length` bytes. -/
 def ByteBound {α : Type} (p : OracleComp FillSpec α) (n : ℕ) : Prop :=

@@ -26,10 +26,7 @@ The independence holds for each call, with a fixed `n` and buffer. After a run t
 next buffer from earlier answers, the final state can depend on those answers, for example
 through the number of bytes that the run used.
 
-The equality is exact, so the condition idealizes a real generator. From `states n`, `n` calls
-for one byte each return `n` uniform bytes, also if `n > Usize.max`. Each state determines these
-bytes, so the support of `states n` has at least `256 ^ n` states, and the state type of `fill`
-is infinite. This is not proved in Lean.
+The equality is exact, so the condition idealizes a real generator.
 
 `EntropyRng` implies `IdealRng`, and the converse is false (`Common/Oracle/EntropyIdealRng.lean`).
 A uniform tape satisfies the condition (`entropyRng_tape`). -/

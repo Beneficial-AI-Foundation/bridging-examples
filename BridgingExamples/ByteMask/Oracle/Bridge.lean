@@ -1,5 +1,4 @@
-import BridgingExamples.ByteMask.Spec
-import BridgingExamples.ByteMask.Crypto
+import BridgingExamples.ByteMask.Oracle.Program
 import Common.Correspondence
 import Common.Metadata
 import Common.Oracle.Tape
@@ -7,81 +6,41 @@ import Common.Oracle.Tape
 /-!
 # Bridge for `mask`, with the generator as an oracle
 
-Aeneas extracts `mask` as a deterministic function of a generator `inst : RngCore R` and a state
-`rng : R`. The bridge to `Crypto.mask` has three steps.
+The generator method `fill_bytes` is the one random atom. `fill_bytes_assumption` relates the
+extracted `fill_bytes` to `Crypto.rand_core.RngCore.fill_bytes`, and `mask_bridge` relates the
+extracted `mask` to `Crypto.mask` under this assumption. `unmask_bridge` relates the deterministic
+`unmask` to `Crypto.unmask`.
 
-1. `mask_eq_prog`: `mask` is the oracle program `maskProg`, run with `inst.fill_bytes`. This holds
-   for every generator, with the final state and failures.
-2. `maskProg_bridge`: `maskProg`, run with uniform bytes (`unifImpl`), has the distribution of
-   `Result.ok <$> Crypto.mask v`.
-3. `mask_bridge`: under `fill_bytes_assumption`, the extracted `mask`, run from a sampled state,
-   has the distribution of `Result.ok <$> Crypto.mask v`.
-
-`fill_bytes_assumption` is the only Lean assumption on the generator. Two assumptions stay outside
-Lean. First, Aeneas extracts `mask` faithfully. Second, the real generator is `fill_bytes` run
-from a state with the distribution `seed`, and this state is independent of the input `v`. The
-oracle definitions are in `Common/Oracle/Rng.lean`.
+The lemmas behind `mask_bridge` are in `Program.lean`.
 -/
 
 namespace byte_mask.Oracle.Bridge
 
-open Aeneas Aeneas.Std BridgingExamples BridgingExamples.Oracle byte_mask.Spec OracleSpec
-  OracleComp
+open Aeneas Aeneas.Std BridgingExamples BridgingExamples.Oracle OracleSpec OracleComp
 
-/-! ## `mask` as an oracle program -/
+/-- The Crypto `fill_bytes` as the answer to a query of `fill_bytes`: the query `s` gets
+`Crypto.rand_core.RngCore.fill_bytes s.length`, with fresh randomness for each query. -/
+def cryptoFill : QueryImpl FillSpec ProbComp := fun s => do
+  let bytes ← Crypto.rand_core.RngCore.fill_bytes s.length
+  pure (sliceOfVector s bytes)
 
-/-- `mask` as an oracle program: one query for `padBuf`, then `maskRest` on the answer. -/
-def maskProg (v : U8) : OracleComp FillSpec (Result (U8 × U8)) := do
-  let b ← (liftM (FillSpec.query padBuf) : OracleComp FillSpec _)
-  return maskRest v b
-
-/-- For every generator `inst` and state `rng`, `mask inst rng v` is `maskProg v` run with
-`inst.fill_bytes` from `rng`, final state and failures included. -/
-@[bridge_for mask]
-theorem mask_eq_prog {R : Type} (inst : rand_core.RngCore R) (rng : R) (v : U8) :
-    mask inst rng v = runProg inst.fill_bytes (maskProg v) rng := by
-  rw [maskProg, runProg_query, mask_eq]
-
-/-- `maskProg v` asks for at most one byte. -/
-theorem maskProg_byteBound (v : U8) : ByteBound (maskProg v) 1 := by
-  simp [ByteBound, maskProg, padBuf_length]
-
-/-- Run with `unifImpl`, `maskProg v` has the distribution of `Result.ok <$> Crypto.mask v`. -/
-@[bridge_for mask]
-theorem maskProg_bridge (v : U8) :
-    simulateQ unifImpl (maskProg v) =ᵈ
-    (do let y ← Crypto.mask v
-        pure (Result.ok y)) := by
-  have e : simulateQ unifImpl (maskProg v) =
-      (do let w ← $ᵗ (List.Vector U8 padBuf.length)
-          pure (maskRest v (sliceOfVector padBuf w))) := by
-    simp [maskProg, unifImpl]
-    rfl
-  rw [e]
-  refine (uniformVector_bind_congr padBuf_length _
-    (fun w : List.Vector U8 1 => pure (Result.ok (w.head, v ^^^ w.head))) ?_).trans ?_
-  · intro w
-    congr 1
-    apply maskRest_of_val
-    rw [sliceOfVector_val]
-    obtain ⟨l, hl⟩ := w
-    rw [padBuf_length] at hl
-    match l, hl with
-    | [x], _ => rfl
-  · have h := (SampleableType.map_uniformSample_evalDistEq_of_bijective head_bijective).map
-      (fun x => Result.ok (x, v ^^^ x))
-    simpa [Crypto.mask, map_eq_bind_pure_comp] using h
-
-/-- The assumption on `fill_bytes`: from a state sampled by `seed`, it answers every oracle program
-with `ByteBound p n` as `unifImpl` does, in distribution. This is `IdealRng inst.fill_bytes seed n`
-unfolded. `IdealRng` states its limits. A generator whose `fill_bytes` is `tapeFill` satisfies it
-with the seed `tapeSeed n` (`idealRng_tape`). -/
+/-- The assumption on `fill_bytes`: from a state sampled by `seed`, the extracted `fill_bytes`
+answers every oracle program `p` that asks for at most `n` bytes as the Crypto `fill_bytes` does,
+in distribution. This is `IdealRng inst.fill_bytes seed n` (`fill_bytes_assumption_iff`), and
+`IdealRng` states its limits. A generator whose `fill_bytes` is `tapeFill` satisfies it with the
+seed `tapeSeed n` (`idealRng_tape`). -/
 def rand_core.RngCore.fill_bytes_assumption {R : Type} (inst : rand_core.RngCore R)
     (seed : ProbComp R) (n : ℕ) : Prop :=
   ∀ {α : Type} (p : OracleComp FillSpec (Result α)), ByteBound p n →
     (do let rng ← seed
         pure (Prod.fst <$> runProg inst.fill_bytes p rng)) =ᵈ
-    simulateQ unifImpl p
+    simulateQ cryptoFill p
+
+/-- `fill_bytes_assumption` is `IdealRng` unfolded. -/
+theorem rand_core.RngCore.fill_bytes_assumption_iff {R : Type} (inst : rand_core.RngCore R)
+    (seed : ProbComp R) (n : ℕ) :
+    rand_core.RngCore.fill_bytes_assumption inst seed n ↔ IdealRng inst.fill_bytes seed n :=
+  Iff.rfl
 
 /-- If `fill_bytes_assumption inst seed 1`, then `mask inst rng v`, with `rng` sampled by `seed`
 and the final state dropped, has the distribution of `Result.ok <$> Crypto.mask v`. The theorem

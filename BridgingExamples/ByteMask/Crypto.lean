@@ -6,10 +6,16 @@ namespace byte_mask.Crypto
 
 open Aeneas.Std
 
-/-- Mask `v` with a uniform pad. Return the pad and the masked byte. -/
+/-- `length` uniform bytes. This is the Crypto counterpart of the generator method `fill_bytes`.
+The bridges assume that the extracted `fill_bytes` gives bytes with this distribution. -/
+def rand_core.RngCore.fill_bytes (length : ℕ) : ProbComp (List.Vector U8 length) :=
+  $ᵗ (List.Vector U8 length)
+
+/-- Mask `v` with a pad. The pad is one byte filled with `fill_bytes`, as in the Rust `mask`.
+Return the pad and the masked byte. -/
 def mask (v : U8) : ProbComp (U8 × U8) := do
-  let pad ← $ᵗ U8
-  pure (pad, v ^^^ pad)
+  let bytes ← rand_core.RngCore.fill_bytes 1
+  pure (bytes.head, v ^^^ bytes.head)
 
 /-- Remove the pad from a masked byte. -/
 def unmask (pad masked : U8) : ProbComp U8 := pure (masked ^^^ pad)

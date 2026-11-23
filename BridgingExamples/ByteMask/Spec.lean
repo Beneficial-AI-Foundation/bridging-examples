@@ -18,7 +18,7 @@ does not call them. -/
 def constRng (b : Slice U8) : rand_core.RngCore Unit where
   next_u32 _ := Result.fail .panic
   next_u64 _ := Result.fail .panic
-  fill_bytes := constFill b
+  fill_bytes := fun _ _ => Result.ok ((), b)
 
 /-- `maskRest v b`: the extracted `mask` on `v`, with `b` as the answer of `fill_bytes`. -/
 def maskRest (v : U8) (b : Slice U8) : Result (U8 × U8) := do
@@ -30,13 +30,13 @@ def maskRest (v : U8) (b : Slice U8) : Result (U8 × U8) := do
 theorem mask_eq {R : Type} (inst : rand_core.RngCore R) (rng : R) (v : U8) :
     mask inst rng v = Aeneas.Std.bind (inst.fill_bytes rng padBuf) fun q =>
       Aeneas.Std.bind (maskRest v q.2) fun p => Result.ok (p, q.1) := by
-  simp only [maskRest, mask, constRng, constFill, lift, Array.to_slice_mut, padBuf,
+  simp only [maskRest, mask, constRng, lift, Array.to_slice_mut, padBuf,
     Aeneas.Std.bind_assoc, Aeneas.Std.bind_ok, uncurry_eq]
 
 /-- If `b` is the one byte `x`, then `maskRest v b` returns the pad `x` and `v ^^^ x`. -/
 theorem maskRest_of_val (v x : U8) (b : Slice U8) (hb : b.val = [x]) :
     maskRest v b = Result.ok (x, v ^^^ x) := by
-  simp only [maskRest, mask, constRng, constFill, lift, Array.to_slice_mut,
+  simp only [maskRest, mask, constRng, lift, Array.to_slice_mut,
     Aeneas.Std.bind_assoc, Aeneas.Std.bind_ok, uncurry_eq]
   simp [Array.from_slice, Array.index_usize, hb]
 
