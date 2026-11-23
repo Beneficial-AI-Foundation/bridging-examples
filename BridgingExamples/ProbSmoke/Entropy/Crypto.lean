@@ -2,7 +2,7 @@ import BridgingExamples.ProbSmoke.Aeneas
 import Common.Byte
 import Common.Metadata
 
-namespace prob_smoke.Crypto
+namespace prob_smoke.Entropy.Crypto
 
 open Aeneas.Std BridgingExamples
 
@@ -17,4 +17,4 @@ def fill_bytes (n : ℕ) (buffer : Slice U8) : ProbComp (ℕ × Slice U8) := do
 def fill_random (n : ℕ) (buffer : Slice U8) : ProbComp (ℕ × Slice U8) :=
   fill_bytes n buffer
 
-end prob_smoke.Crypto
+end prob_smoke.Entropy.Crypto

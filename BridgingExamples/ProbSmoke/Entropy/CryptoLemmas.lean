@@ -1,6 +1,6 @@
-import BridgingExamples.ProbSmoke.Crypto
+import BridgingExamples.ProbSmoke.Entropy.Crypto
 
-namespace prob_smoke.Crypto
+namespace prob_smoke.Entropy.Crypto
 
 open Aeneas.Std BridgingExamples
 open scoped ENNReal
@@ -36,4 +36,4 @@ theorem prEvent_fill_bytes (n : ℕ) (buffer s : Slice U8) :
     rw [← hb]
     simp [Slice.length, bytes.property]
 
-end prob_smoke.Crypto
+end prob_smoke.Entropy.Crypto
