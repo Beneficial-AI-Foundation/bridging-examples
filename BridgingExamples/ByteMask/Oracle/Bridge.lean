@@ -95,14 +95,20 @@ theorem maskProg_bridge (v : U8) :
 
 /-- The assumption on `fill_bytes`: from a state sampled by `seed`, it answers every oracle program
 with `ByteBound p n` as `unifImpl` does, in distribution. This is `IdealRng inst.fill_bytes seed n`
-unfolded. `IdealRng` states its limits. A generator whose `fill_bytes` is `tapeFill` satisfies it
-with the seed `tapeSeed n` (`idealRng_tape`). -/
+unfolded (`fill_bytes_assumption_iff`). `IdealRng` states its limits. A generator whose
+`fill_bytes` is `tapeFill` satisfies it with the seed `tapeSeed n` (`idealRng_tape`). -/
 def rand_core.RngCore.fill_bytes_assumption {R : Type} (inst : rand_core.RngCore R)
     (seed : ProbComp R) (n : ℕ) : Prop :=
   ∀ {α : Type} (p : OracleComp FillSpec (Result α)), ByteBound p n →
     (do let rng ← seed
         pure (Prod.fst <$> runProg inst.fill_bytes p rng)) =ᵈ
     simulateQ unifImpl p
+
+/-- `fill_bytes_assumption` is `IdealRng` unfolded. -/
+theorem rand_core.RngCore.fill_bytes_assumption_iff {R : Type} (inst : rand_core.RngCore R)
+    (seed : ProbComp R) (n : ℕ) :
+    rand_core.RngCore.fill_bytes_assumption inst seed n ↔ IdealRng inst.fill_bytes seed n :=
+  Iff.rfl
 
 /-- If `fill_bytes_assumption inst seed 1`, then `mask inst rng v`, with `rng` sampled by `seed`
 and the final state dropped, has the distribution of `Result.ok <$> Crypto.mask v`. The theorem
