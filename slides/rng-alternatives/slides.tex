@@ -357,24 +357,27 @@
   \vfill
   \centering
   \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
-    \node[gap, text width=6.4cm] (patch) at (0, 0) {patch Aeneas: a \code{Result} can draw a uniform value};
-    \node[impl, text width=2.8cm] (l) at (-4.6, -1.3) {Rust \code{mask}};
-    \node[spec, text width=2.8cm] (r) at (4.6, -1.3) {\code{Crypto.mask}};
-    \draw[proved, line width=2pt] (l) -- node[pos=0.22, below, label, text=proofc] {\textbf{one theorem}} (r);
-    \node[trust, text width=5.0cm] (h) at (0, -2.5) {H(G): \code{fill\_bytes} draws uniform bytes};
-    \draw[flow, trustc] (h.north) -- (0, -1.45);
-    \draw[flow, gapc, dashed] (patch.south) -- (0, -1.15);
+    \node[proof, text width=7.2cm] (p) at (0, 0) {\code{maskModel v = b <- randomBytes 1 ; ...}};
+    \node[impl, text width=2.8cm] (l) at (-3.0, -1.3) {Rust \code{mask}};
+    \node[spec, text width=2.8cm] (r) at (3.0, -1.3) {\code{Crypto.mask}};
+    \draw[proved] (p.south -| l.north) -- node[right, label, text=proofc] {\code{mask\_eq}} (l.north);
+    \draw[proved] (p.south -| r.north) -- node[right, label, text=proofc] {\code{maskModel\_bridge}} (r.north);
+    \draw[gapc, dashed, thick] (l.south) -- ++(0,-0.45) -| node[pos=0.25, below, label, text=gapc] {not proved} (r.south);
+    \node[trust, text width=3.0cm] (h) at (-6.6, -0.65) {\code{RandomFill}: \code{fill\_bytes} asks \code{Result.random}};
+    \draw[flow, trustc] (h.east) -- ($(p.south -| l.north)!0.5!(l.north)$);
   \end{tikzpicture}
 
-  \slidenote{Roll the dice inside the code, at the call.}
-  \vfill
+  \slidebullets{
+    \item The patch adds \code{Result.random n}: ask for $n$ random bytes. Aeneas gives it no distribution.
+    \item \code{maskModel} is written by hand, as in 3. Only the model has a distribution.}
   \proscons{%
-    \pro\ Q1: yes\\[0.2em]
-    \pro\ Q2: no extra program\\[0.2em]
+    \pro\ No seed and no budget\\[0.1em]
+    \pro\ Q3: yes. The state is unchanged\\[0.1em]
     \pro\ Fits a stateless \code{OsRng}}{%
-    \con\ Changes \code{Result} for all users\\[0.2em]
-    \con\ Functional proofs stop at a draw\\[0.2em]
-    \con\ First patch withdrawn, new one not seen}
+    \con\ Q1: no. Two theorems, the link\\\ \ \ to Rust \code{mask} is not proved\\[0.1em]
+    \con\ Q2: a program per function\\[0.1em]
+    \con\ Changes \code{Result} for all users\\[0.1em]
+    \con\ \code{mvcgen} says nothing after a draw}
   \vfill
 \end{frame}
 
@@ -387,15 +390,15 @@
     \node[trust, text width=4.0cm, minimum height=1.3cm] at (-4.6, -0.3) {all answers of a program\\look uniform};
     \node[font=\small\bfseries, text=proofc] at (0, 0.6) {2 \code{EntropyRng}};
     \node[trust, text width=4.0cm, minimum height=1.3cm] at (0, -0.3) {each call on a state\\gives uniform bytes};
-    \node[font=\small\bfseries, text=gapc] at (4.6, 0.6) {4 H(G)};
-    \node[trust, text width=4.0cm, minimum height=1.3cm] at (4.6, -0.3) {each call\\draws uniform bytes};
+    \node[font=\small\bfseries, text=proofc] at (4.6, 0.6) {4 \code{RandomFill}};
+    \node[trust, text width=4.0cm, minimum height=1.3cm] at (4.6, -0.3) {each call asks\\\code{Result.random}};
     \node[label, text width=3.8cm] at (-4.6, -1.6) {global, with a budget\\randomness in the state\\Aeneas unchanged};
     \node[label, text width=3.8cm] at (0, -1.6) {per call, budget \code{n}\\randomness in the state\\Aeneas unchanged};
     \node[label, text width=3.8cm] at (4.6, -1.6) {per call, no budget\\randomness in the call\\Aeneas patched};
     \draw[->, thick, trustc] (-6.4, -2.6) -- node[below, label, text=trustc] {from whole programs to single calls} (6.4, -2.6);
   \end{tikzpicture}
 
-  \slidenote{4: ``\code{OsRng} meets H(G)'' stays outside Lean. 2 and 3: the stateless \code{OsRng} meets neither. The randomness must come from the state.}
+  \slidenote{4: ``the random bytes are uniform'' stays outside Lean. 2 and 3: the stateless \code{OsRng} meets neither. The randomness must come from the state.}
   \vfill
 \end{frame}
 
@@ -412,7 +415,7 @@
     1 (Tape)          & \yes & \no  & tape length & -- \\
     2 (Entropy)       & \yes & \yes & byte counts & \yes \\
     3 (Oracle)        & \yes & \yes & program per function & \no \\
-    4 (Effect)        & \no  & \yes & none & -- \\
+    4 (Effect)        & \no  & \no  & program per function & \yes \\
     \hline
   \end{tabular}
   \vfill
