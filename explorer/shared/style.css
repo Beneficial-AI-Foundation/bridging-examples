@@ -124,6 +124,8 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .line button.ln:hover { color: #252a31; text-decoration: underline; }
 .line code { font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; flex: 1; }
 .line[data-atom] { cursor: pointer; }
+pre.peek { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--line); }
+pre.peek .line { min-height: 0; padding-right: 0; }
 .line[data-atom]:hover { background: #f0f4f7; }
 .line.focused { background: #eaf4f1; border-left-color: #77ae9e; }
 .line.active-addition:not(.hypothesis) { background: #deeee8; border-left-color: #368d74; }

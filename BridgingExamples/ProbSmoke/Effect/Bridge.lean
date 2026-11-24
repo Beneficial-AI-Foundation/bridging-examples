@@ -1,5 +1,5 @@
 import BridgingExamples.ProbSmoke.Spec
-import BridgingExamples.ProbSmoke.Crypto
+import BridgingExamples.ProbSmoke.Effect.Crypto
 import Common.Effect.Random
 import Common.Metadata
 

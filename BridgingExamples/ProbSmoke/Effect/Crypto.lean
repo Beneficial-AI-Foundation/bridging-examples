@@ -1,7 +1,7 @@
 import BridgingExamples.ProbSmoke.Aeneas
 import Common.Byte
 
-namespace prob_smoke.Crypto
+namespace prob_smoke.Effect.Crypto
 
 open Aeneas.Std
 
@@ -13,4 +13,4 @@ def rand_core.RngCore.fill_bytes (length : ℕ) : ProbComp (List.Vector U8 lengt
 def fill_random (length : ℕ) : ProbComp (List.Vector U8 length) :=
   rand_core.RngCore.fill_bytes length
 
-end prob_smoke.Crypto
+end prob_smoke.Effect.Crypto
