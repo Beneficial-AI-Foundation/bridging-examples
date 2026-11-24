@@ -7,9 +7,8 @@ import BridgingExamples.OneTimePad.Oracle.Bridge
 `rustOtp inst seed` is the `SymmEncAlg` whose algorithms run the extracted `keygen`, `encrypt`
 and `decrypt`. Under `fill_bytes_assumption` with a budget of 16 bytes:
 
-* `rustOtp_cipher`: the ciphertext of a message under `rustOtp` has the distribution of
-  `Result.ok` applied to its ciphertext under `Crypto.otp`. So the extracted code fails with
-  probability 0.
+* `rustOtp_cipher`: for every message, the extracted code never fails, and its ciphertext has
+  the same distribution as the ciphertext under `Crypto.otp`.
 * `rustOtp_perfectSecrecy`: `rustOtp` is perfectly secret, from `rustOtp_cipher` and
   `otp_ciphertextRowsEqual`.
 * `rustOtp_complete`: decryption returns the message with probability 1.
@@ -38,7 +37,8 @@ theorem otp_keygen_eq : (otp.keygen : ProbComp Block) = $ᵗ Block := by
   rw [map_eq_bind_pure_comp]
   rfl
 
-/-- Under `Crypto.otp`, every message gives the same ciphertext distribution. -/
+/-- For all messages `m₀` and `m₁`, `otp.encrypt k m₀` and `otp.encrypt k m₁` with
+`k ← otp.keygen` have the same distribution. This is VCVio's `ciphertextRowsEqualAt`. -/
 theorem otp_ciphertextRowsEqual : otp.ciphertextRowsEqualAt := by
   let : MeasurableSpace Block := ⊤
   have hxor (msg : Block) : Function.Bijective (fun key => xor key msg) := by
@@ -58,28 +58,36 @@ mass 1, the message and the ciphertext are independent. -/
 theorem otp_perfectSecrecy : otp.perfectSecrecyAt :=
   SymmEncAlg.perfectSecrecyAt_of_ciphertextRowsEqualAt otp otp_ciphertextRowsEqual
 
-/-- The one-time pad whose algorithms are the extracted code. `keygen` runs the extracted `keygen`
-from a state sampled by `seed` and drops the final state. A key or ciphertext is a `Result`, so a
-failure of the extracted code is a value. `encrypt` runs the extracted `encrypt` on a successful
-key, and returns the failure of the key otherwise. `decrypt` runs the extracted `decrypt` on a
-successful key and ciphertext, and returns `none` on a failure or divergence. -/
+/-- The one-time pad whose algorithms are the extracted code. A key or ciphertext is a `Result`
+(the Aeneas type of a run that can fail), so a failure of the extracted code is a value.
+
+* `keygen`: `rng ← seed`, then `(k, _) := keygen inst rng`. The final generator state is dropped.
+* `encrypt rk m`: `k ← rk`, then `encrypt k m`. A failed key gives the same failure.
+* `decrypt rk rc`: `k ← rk`, `c ← rc`, then `decrypt k c`. A failure gives `none`. -/
 def rustOtp {R : Type} (inst : rand_core.CryptoRng R) (seed : ProbComp R) :
     SymmEncAlg ProbComp Block (Result Block) (Result Block) where
   keygen := do
     let rng ← seed
     pure (Prod.fst <$> one_time_pad.keygen inst rng)
-  encrypt k m := pure (k >>= fun k => one_time_pad.encrypt k m)
-  decrypt k c := pure (toOption (k >>= fun k => c >>= fun c => one_time_pad.decrypt k c))
+  encrypt rk m := pure do
+    let k ← rk
+    one_time_pad.encrypt k m
+  decrypt rk rc := pure <| toOption do
+    let k ← rk
+    let c ← rc
+    one_time_pad.decrypt k c
 
-/-- If `fill_bytes_assumption inst.RngCoreInst seed 16`, then the ciphertext of `message` under
-`rustOtp inst seed` has the distribution of `Result.ok` applied to the ciphertext of `message`
-under `Crypto.otp`. So `keygen` and `encrypt` fail with probability 0. -/
+/-- If `fill_bytes_assumption inst.RngCoreInst seed 16`, then for every `message`, the extracted
+code never fails, and its ciphertext has the same distribution as `c ← otp.encrypt k message`
+with `k ← otp.keygen`. -/
 theorem rustOtp_cipher {R : Type} (inst : rand_core.CryptoRng R) (seed : ProbComp R)
     (h : rand_core.RngCore.fill_bytes_assumption inst.RngCoreInst seed 16) (message : Block) :
-    (rustOtp inst seed).perfectSecrecyCipherGivenMsgExperiment message =ᵈ
-    Result.ok <$> otp.perfectSecrecyCipherGivenMsgExperiment message := by
+    (do let k ← (rustOtp inst seed).keygen
+        (rustOtp inst seed).encrypt k message) =ᵈ
+    Result.ok <$> (do let k ← otp.keygen
+                      otp.encrypt k message) := by
   have hk := bind_call (keygen_bridge inst seed h) (fun k => one_time_pad.encrypt k message)
-  simp only [SymmEncAlg.perfectSecrecyCipherGivenMsgExperiment, rustOtp, bind_assoc, pure_bind]
+  simp only [rustOtp, bind_assoc, pure_bind]
   refine hk.trans ?_
   simp [otp, Spec.encrypt_eq, xorBlock_eq_xor, map_eq_bind_pure_comp]
 
@@ -107,6 +115,8 @@ theorem rustOtp_complete {R : Type} (inst : rand_core.CryptoRng R) (seed : ProbC
   have e : (rustOtp inst seed).completenessExperiment message =
       g <$> (do let rng ← seed; pure (Prod.fst <$> one_time_pad.keygen inst rng)) := by
     simp [SymmEncAlg.completenessExperiment, rustOtp, g, map_eq_bind_pure_comp]
+    simp only [Function.comp_def, Aeneas.Std.bind_tc_eq, Aeneas.Std.bind_assoc,
+      Aeneas.Std.pure_bind, Aeneas.Std.pure_tc_eq]
   have hg : ∀ k, g (Result.ok k) = some message := fun k => by
     simp [g, Spec.encrypt_eq, Spec.decrypt_encrypt, toOption]
   have hc : (g <$> do let k ← otp.keygen; pure (Result.ok k)) =
