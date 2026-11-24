@@ -1,0 +1,516 @@
+diff --git a/backends/lean/Aeneas/Std.lean b/backends/lean/Aeneas/Std.lean
+index fc1ed39..447ccb5 100644
+--- a/backends/lean/Aeneas/Std.lean
++++ b/backends/lean/Aeneas/Std.lean
+@@ -4,6 +4,7 @@ public import Aeneas.Std.Array
+ public import Aeneas.Std.Core
+ public import Aeneas.Std.Primitives
+ public import Aeneas.Std.PrimitivesLemmas
++public import Aeneas.Std.Random
+ public import Aeneas.Std.RawPtr
+ public import Aeneas.Std.Scalar
+ public import Aeneas.Std.Slice
+diff --git a/backends/lean/Aeneas/Std/Primitives.lean b/backends/lean/Aeneas/Std/Primitives.lean
+index 2ea4041..abb66cc 100644
+--- a/backends/lean/Aeneas/Std/Primitives.lean
++++ b/backends/lean/Aeneas/Std/Primitives.lean
+@@ -50,11 +50,14 @@ open Error
+ 
+ inductive RustEffect.Input : Type where
+ | fail : Error → RustEffect.Input
++/-- Ask for `n` random bytes. -/
++| random : Nat → RustEffect.Input
+ 
+ @[implicit_reducible]
+ def RustEffect.Output (i : RustEffect.Input) : Type :=
+   match i with
+   | .fail _ => PEmpty
++  | .random n => Vector (BitVec 8) n
+ 
+ @[implicit_reducible]
+ def RustEffect : Effect := {
+@@ -83,6 +86,17 @@ theorem Result.fail_eq_vis {α} (e : Error) :
+ 
+ def Result.div {α} : Result α := ITree.div
+ 
++/-- The random effect: ask for `n` random bytes. It cannot fail.
++
++Like `Result.fail`, it is kept opaque: reason about it through the dedicated lemmas
++(`spec_random`, ...). The bytes are raw `BitVec 8`s because `U8` is defined on top of this
++file. -/
++def Result.random (n : Nat) : Result (Vector (BitVec 8) n) :=
++  Result.vis (.random n) Result.ok
++
++theorem Result.random_eq_vis (n : Nat) :
++  Result.random n = Result.vis (.random n) Result.ok := rfl
++
+ def bind {α : Type u} {β : Type v} (x: Result α) (f: α → Result β) : Result β :=
+   ITree.bind x f
+ 
+@@ -131,6 +145,7 @@ instance Result.reprInst {α : Type u} [Repr α] : Repr (Result α) where
+     | .ok a => "Aeneas.Std.Result.ok " ++ repr a
+     | .div => "Aeneas.Std.Result.div"
+     | .vis (.fail e) _ => "Aeneas.Std.Result.fail " ++ repr e
++    | .vis (.random n) _ => "Aeneas.Std.Result.random " ++ repr n
+ 
+ /-!
+ `Result` not being an inductive type it has no built-in constructor facts that grind
+diff --git a/backends/lean/Aeneas/Std/Random.lean b/backends/lean/Aeneas/Std/Random.lean
+new file mode 100644
+index 0000000..70c906c
+--- /dev/null
++++ b/backends/lean/Aeneas/Std/Random.lean
+@@ -0,0 +1,122 @@
++module
++public import Aeneas.Std.Slice
++public import Aeneas.Std.Core.Result
++public import Aeneas.Std.Core.Fmt
++public section
++
++/-!
++# Random number generators
++
++`rand_core::OsRng` (external code, opaque), and `rand_core::TryRngCore` with its `UnwrapErr`
++wrapper. See `Result.random` in `Aeneas.Std.Primitives` for the effect which samples bytes.
++-/
++
++namespace Aeneas.Std
++
++open Result
++
++/-!
++# `rand_core::OsRng`
++
++The operating system RNG is external code: its `try_*` methods are opaque. Nothing can be
++proved about them; what a development assumes of them (for instance that they do not fail and
++return bytes sampled with `Result.random`) is stated as a hypothesis of its theorems.
++-/
++
++@[reducible, expose, rust_type "rand_core::os::OsRng"]
++def rand_core.os.OsRng := Unit
++
++/-- The error returned by `OsRng` when the operating system fails to provide random bytes.
++We do not model its content. -/
++@[rust_type "rand_core::os::OsError"]
++inductive rand_core.os.OsError where
++  | failure
++
++@[rust_fun
++  "rand_core::os::{rand_core::TryRngCore<rand_core::os::OsRng, rand_core::os::OsError>}::try_next_u32"]
++opaque rand_core.os.OsRng.try_next_u32 (self : rand_core.os.OsRng) :
++    Result ((core.result.Result U32 rand_core.os.OsError) × rand_core.os.OsRng)
++
++@[rust_fun
++  "rand_core::os::{rand_core::TryRngCore<rand_core::os::OsRng, rand_core::os::OsError>}::try_next_u64"]
++opaque rand_core.os.OsRng.try_next_u64 (self : rand_core.os.OsRng) :
++    Result ((core.result.Result U64 rand_core.os.OsError) × rand_core.os.OsRng)
++
++@[rust_fun
++  "rand_core::os::{rand_core::TryRngCore<rand_core::os::OsRng, rand_core::os::OsError>}::try_fill_bytes"]
++opaque rand_core.os.OsRng.try_fill_bytes (self : rand_core.os.OsRng) (dst : Slice U8) :
++    Result ((core.result.Result Unit rand_core.os.OsError) × rand_core.os.OsRng × Slice U8)
++
++@[expose, rust_fun "rand_core::os::{core::fmt::Debug<rand_core::os::OsError>}::fmt"]
++def rand_core.os.OsError.Insts.CoreFmtDebug.fmt (_ : rand_core.os.OsError)
++    (fmt : core.fmt.Formatter) :
++    Result ((core.result.Result Unit core.fmt.Error) × core.fmt.Formatter) :=
++  ok (.Ok (), fmt)
++
++@[expose, rust_fun "rand_core::os::{core::fmt::Display<rand_core::os::OsError>}::fmt"]
++def rand_core.os.OsError.Insts.CoreFmtDisplay.fmt (_ : rand_core.os.OsError)
++    (fmt : core.fmt.Formatter) :
++    Result ((core.result.Result Unit core.fmt.Error) × core.fmt.Formatter) :=
++  ok (.Ok (), fmt)
++
++/-!
++# `rand_core::TryRngCore` and `rand_core::UnwrapErr`
++
++`UnwrapErr` turns a fallible RNG into an infallible one, which panics upon failure:
++`OsRng.unwrap_err().fill_bytes(..)` returns random bytes, or panics.
++-/
++
++/-- A wrapper around a fallible RNG, which panics upon failure. -/
++@[reducible, expose, rust_type "rand_core::UnwrapErr"]
++def rand_core.UnwrapErr (R : Type u) (_Error : Type v) := R
++
++@[rust_trait "rand_core::TryRngCore"
++  (parentClauses := ["corefmtDebugInst", "corefmtDisplayInst"])
++  (defaultMethods := ["unwrap_err"])]
++structure rand_core.TryRngCore (Self : Type u) (Self_Error : Type v) where
++  corefmtDebugInst : core.fmt.Debug Self_Error
++  corefmtDisplayInst : core.fmt.Display Self_Error
++  try_next_u32 : Self → Result ((core.result.Result U32 Self_Error) × Self)
++  try_next_u64 : Self → Result ((core.result.Result U64 Self_Error) × Self)
++  try_fill_bytes : Self → Slice U8 →
++    Result ((core.result.Result Unit Self_Error) × Self × (Slice U8))
++  unwrap_err : Self → Result (rand_core.UnwrapErr Self Self_Error) := fun self => ok self
++
++@[expose, trait_default]
++def rand_core.TryRngCore.unwrap_err.default {Self : Type u} {Error : Type v}
++    (_TryRngCoreInst : rand_core.TryRngCore Self Error) (self : Self) :
++    Result (rand_core.UnwrapErr Self Error) :=
++  ok self
++
++@[expose, rust_fun
++  "rand_core::{rand_core::RngCore<rand_core::UnwrapErr<@R, @Clause0_Error>>}::next_u32"]
++def rand_core.UnwrapErr.next_u32 {R : Type u} {Error : Type v}
++    (TryRngCoreInst : rand_core.TryRngCore R Error) (self : rand_core.UnwrapErr R Error) :
++    Result (U32 × rand_core.UnwrapErr R Error) :=
++  Std.bind (TryRngCoreInst.try_next_u32 self) fun (r, self) =>
++  match r with
++  | .Ok x => ok (x, self)
++  | .Err _ => fail .panic
++
++@[expose, rust_fun
++  "rand_core::{rand_core::RngCore<rand_core::UnwrapErr<@R, @Clause0_Error>>}::next_u64"]
++def rand_core.UnwrapErr.next_u64 {R : Type u} {Error : Type v}
++    (TryRngCoreInst : rand_core.TryRngCore R Error) (self : rand_core.UnwrapErr R Error) :
++    Result (U64 × rand_core.UnwrapErr R Error) :=
++  Std.bind (TryRngCoreInst.try_next_u64 self) fun (r, self) =>
++  match r with
++  | .Ok x => ok (x, self)
++  | .Err _ => fail .panic
++
++@[expose, rust_fun
++  "rand_core::{rand_core::RngCore<rand_core::UnwrapErr<@R, @Clause0_Error>>}::fill_bytes"]
++def rand_core.UnwrapErr.fill_bytes {R : Type u} {Error : Type v}
++    (TryRngCoreInst : rand_core.TryRngCore R Error) (self : rand_core.UnwrapErr R Error)
++    (dst : Slice U8) :
++    Result (rand_core.UnwrapErr R Error × Slice U8) :=
++  Std.bind (TryRngCoreInst.try_fill_bytes self dst) fun (r, self, dst) =>
++  match r with
++  | .Ok _ => ok (self, dst)
++  | .Err _ => fail .panic
++
++end Aeneas.Std
+diff --git a/backends/lean/Aeneas/Std/WP.lean b/backends/lean/Aeneas/Std/WP.lean
+index 25697ab..f303c47 100644
+--- a/backends/lean/Aeneas/Std/WP.lean
++++ b/backends/lean/Aeneas/Std/WP.lean
+@@ -35,23 +35,32 @@ unseal Result
+ @[reducible]
+ def effectWP : EffectWP RustEffect where
+   State := Unit
+-  wp effect _ _ :=
+-    match effect with
+-    | .fail _ => False
++  wp effect C _ :=
++    match effect, C with
++    | .fail _, _ => False
++    -- Demonic: the post-condition must hold whatever the bytes.
++    | .random _, C => ∀ answer, C answer ()
+ 
+ instance : EffectWP.Monotonic effectWP where
+-  wp_monotonic _ := False.elim
++  wp_monotonic := by
++    intro effect C C' hC _ hWp
++    cases effect
++    · exact hWp.elim
++    · exact fun answer => hC _ _ (hWp answer)
+ 
+ instance : EffectWP.Conjunctive effectWP where
+   wp_conj := by
+-    intro _ _ _ hNonempty hAll
++    intro effect _ _ hNonempty hAll
+     obtain ⟨C₀, hC₀⟩ := hNonempty
+-    exact (hAll C₀ hC₀).elim
++    cases effect
++    · exact (hAll C₀ hC₀).elim
++    · exact fun answer C hC => hAll C hC answer
+ 
+ instance : EffectWP.ExcludedMiracle effectWP where
+   wp_excludedMiracle := by
+-    rintro ⟨⟩ _ h
+-    exact h
++    rintro (_ | n) _ h
++    · exact h
++    · exact h (Vector.replicate n 0)
+ 
+ def spec (m : Result α) (p : Post α) : Prop :=
+   DWP effectWP m (fun value _ => p value) ()
+@@ -96,15 +105,40 @@ def uncurry' {α β γ : Type _} (p : α → β → γ) : α × β → γ :=
+ @[simp, grind =, agrind =]
+ theorem spec_ok (x : α) : spec (ok x) p ↔ p x := DWP.ret_iff
+ 
++theorem spec_vis (e k) :
++    spec (.vis e k) p ↔ effectWP.wp e (fun answer _ => spec (k answer) p) () :=
++  ⟨fun h => DWP.vis_view h, fun h => DWP.vis h⟩
++
+ @[simp, grind =, agrind =]
+-theorem spec_vis (e k) : spec (.vis e k) p ↔ False := ⟨fun h => DWP.vis_view h, False.elim⟩
++theorem spec_fail (e : Error) : spec (fail e) p ↔ False := by
++  rw [Result.fail_eq_vis, spec_vis]
+ 
++/-- The random effect is demonic: the post-condition must hold for all the bytes. -/
+ @[simp, grind =, agrind =]
+-theorem spec_fail (e : Error) : spec (fail e) p ↔ False := by simp [Result.fail_eq_vis]
++theorem spec_random (n : Nat) {p : Post (Vector (BitVec 8) n)} :
++    spec (Result.random n) p ↔ ∀ bytes, p bytes := by
++  rw [Result.random_eq_vis, spec_vis]
++  simp only [spec_ok]
++  rfl
+ 
+ @[simp, grind =, agrind =]
+ theorem spec_div : spec div p ↔ False := ⟨DWP.div_false, False.elim⟩
+ 
++/-- A computation which satisfies a (total) specification has a possible outcome, which
++satisfies all its specifications (the `random` effect being demonic, there may be several). -/
++theorem spec_exists_outcome {α} {m : Result α} {p₀ : Post α} (h : spec m p₀) :
++    ∃ a, ∀ p : Post α, spec m p → p a := by
++  refine DWP.induction (θ := effectWP)
++    (P := fun m _ => ∃ a, ∀ p : Post α, spec m p → p a) ?_ ?_ h
++  · intro value _ _
++    exact ⟨value, fun p hp => DWP.ret_iff.mp hp⟩
++  · intro effect k _ hWp
++    cases effect with
++    | fail e => exact hWp.elim
++    | random n =>
++      obtain ⟨a, ha⟩ := hWp (Vector.replicate n 0)
++      exact ⟨a, fun p hp => ha p (DWP.vis_view hp (Vector.replicate n 0))⟩
++
+ /-! ### `spec_*` for tuple posts
+ 
+ Needed now with the new `uncurry`-based pattern matching. -/
+@@ -157,14 +191,23 @@ theorem dspec_bind {α β} {k : α -> Result β} {Pₖ : Post β} {m : Result α
+ @[simp, grind =, agrind =]
+ theorem dspec_ok (x : α) : dspec (ok x) p ↔ p x := DWLP.ret_iff
+ 
++theorem dspec_vis (e k) :
++    dspec (.vis e k) p ↔ effectWP.wp e (fun answer _ => dspec (k answer) p) () :=
++  ⟨fun h => DWLP.vis_view h, fun h => DWLP.vis h⟩
++
+ @[simp, grind =, agrind =]
+-theorem dspec_vis (e k) : dspec (.vis e k) p ↔ False := ⟨fun h => DWLP.vis_view h, False.elim⟩
++theorem dspec_random (n : Nat) {p : Post (Vector (BitVec 8) n)} :
++    dspec (Result.random n) p ↔ ∀ bytes, p bytes := by
++  rw [Result.random_eq_vis, dspec_vis]
++  simp only [dspec_ok]
++  rfl
+ 
+ @[simp, grind =, agrind =]
+ theorem dspec_div : dspec (div : Result α) p ↔ True := iff_true_intro DWLP.div
+ 
+ @[simp, grind =, agrind =]
+-theorem dspec_fail (e : Error) : dspec (fail e) p ↔ False := by simp [Result.fail_eq_vis]
++theorem dspec_fail (e : Error) : dspec (fail e) p ↔ False := by
++  rw [Result.fail_eq_vis, dspec_vis]
+ 
+ theorem dspec_and {m : Result α} {p q : Post α} (h₁ : dspec m p) (h₂ : dspec m q) :
+     dspec m (fun value => p value ∧ q value) :=
+@@ -679,11 +722,16 @@ namespace Aeneas.Std.WP
+ open Aeneas.Std Result
+ open Std.Do
+ 
+--- mvcgen does not support all types of effects, and currently this implementation only works with fail and div.
+--- This option is set here so that this same code works for any extension to RustEffect.Input
+-set_option match.ignoreUnusedAlts true
++-- mvcgen does not support all types of effects: this implementation only works with fail and div.
+ -- There are three types of exceptions in the type: the Error from Result.fail,
+--- a dummy exception thrown when any other effect is used, and Result.div.
++-- a dummy exception (unused for now), and Result.div.
++--
++-- **The `random` effect is not supported**: the predicate transformer only looks at the head of
++-- the computation, so it can not quantify over the sampled bytes. A computation which starts by
++-- sampling is treated as a miracle (its `wp` is `True`), meaning a `Triple` says nothing about
++-- what happens after the first sample (see the precondition of `Result.of_wp`). We do this,
++-- rather than mapping `random` to the dummy exception, so that `spec_to_mvcgen` holds without
++-- side conditions. Use `step` to reason about the computations which sample.
+ instance Result.instWP : WP Result.{u} (.except (ULift Error) (.except PUnit (.except PUnit .pure))) where
+   wp x := {
+     trans Q := match x.match with
+@@ -691,13 +739,18 @@ instance Result.instWP : WP Result.{u} (.except (ULift Error) (.except PUnit (.e
+       | .vis eff _ =>
+         match eff with
+         | .fail e => Q.2.1 (ULift.up e)
+-        | _ => Q.2.2.1 PUnit.unit
++        | .random _ => ⌜True⌝
+       | .div => Q.2.2.2.1 .unit
+     conjunctiveRaw Q₁ Q₂ := by
+       apply SPred.bientails.of_eq
+-      cases x <;> simp
++      cases x with
++      | ret => simp
++      | vis i k =>
++        cases i
++        · simp
++        · simp; rfl
++      | div => simp
+   }
+-set_option match.ignoreUnusedAlts false
+ 
+ instance Result.instWPMonad : WPMonad Result (.except (ULift Error) (.except PUnit (.except PUnit .pure))) where
+   wp_pure a := by apply PredTrans.ext; intro Q; simp [PredTrans.apply, wp, WP.wp]; rfl
+@@ -709,37 +762,49 @@ instance Result.instWPMonad : WPMonad Result (.except (ULift Error) (.except PUn
+     · cbv
+     · simp
+       rename_i i k
+-      cases i; cbv
++      cases i <;> cbv
+     · cbv
+ 
+ 
+-theorem Result.of_wp {α : Type u} {x : Result α} (P : Result α → Prop) :
++theorem Result.of_wp {α : Type u} {x : Result α} (P : Result α → Prop)
++    (hx : ∀ i k, x = .vis i k → ∃ e, i = .fail e) :
+     (⊢ₛ wp⟦x⟧ (fun a => ⌜P (.ok a)⌝,
+                   fun e => ⌜P (.fail e.down)⌝,
+-                  fun _ => ⌜False⌝, -- unreachable: `RustEffect` currently only has the `fail` effect.
++                  fun _ => ⌜False⌝, -- unreachable: the dummy exception is not used
+                   fun .unit => ⌜P .div⌝, .unit)) → P x := by
+     intro hspec
+     simp only [WP.wp, PredTrans.apply] at hspec
+     split at hspec <;> simp_all
+     rename_i x eff heq a
+     cases eff
+-    have : heq = PEmpty.elim := by funext; contradiction
+-    simp [*] at *
+-    try trivial
++    · have : heq = PEmpty.elim := by funext; contradiction
++      simp [*] at *
++      try trivial
++    all_goals (obtain ⟨e, he⟩ := hx _ _ rfl; cases he)
+ 
+ 
+ /-- Lift an Aeneas step spec to an mvcgen-compatible `Triple`. -/
+ theorem spec_to_mvcgen {α : Type u} {x : Result α} {Q : α → Prop}
+     (h : spec x Q) :
+     ⦃ ⌜ True ⌝ ⦄ x ⦃ ⇓ r => ⌜ Q r ⌝ ⦄ := by
+-  cases x <;> simp_all [Triple, WP.wp, PredTrans.apply]
++  cases x with
++  | ret => simp_all [Triple, WP.wp, PredTrans.apply]
++  | div => simp_all
++  | vis i k =>
++    cases i with
++    | fail e => exact ((spec_vis _ _).mp h).elim
++    | random n => simp [Triple, WP.wp, PredTrans.apply]
+ 
+ theorem dspec_to_mvcgen {α : Type u} {x : Result α} {Q : α → Prop}
+     (h : dspec x Q) :
+     ⦃ ⌜ ¬ x = .div ⌝ ⦄ x ⦃ ⇓ r => ⌜ Q r ⌝ ⦄ := by
+-  simp [Triple, WP.wp, PredTrans.apply, SPred.pure]
+-  cases x <;> simp [*] at *
+-  trivial
++  cases x with
++  | ret => simp_all [Triple, WP.wp, PredTrans.apply]
++  | div => simp [Triple, SPred.pure]
++  | vis i k =>
++    cases i with
++    | fail e => exact ((dspec_vis _ _).mp h).elim
++    | random n => simp [Triple, WP.wp, PredTrans.apply]
+ 
+ end Aeneas.Std.WP
+ 
+diff --git a/backends/lean/Aeneas/Tactic/Step/Tests/Coin.lean b/backends/lean/Aeneas/Tactic/Step/Tests/Coin.lean
+index c23484b..6513db0 100644
+--- a/backends/lean/Aeneas/Tactic/Step/Tests/Coin.lean
++++ b/backends/lean/Aeneas/Tactic/Step/Tests/Coin.lean
+@@ -79,20 +79,20 @@ theorem coinSpec_bind {α β} {k : α -> ITreeC β} {Pₖ : Post β} {m : ITreeC
+   · --simp only
+     exists m, k
+ 
+-instance : MonadLift Result ITreeC where
++/-- We lift the `Result` computations which terminate successfully to one of their possible
++outcomes (there may be several because of the `random` effect), and the others to `div`. -/
++noncomputable instance : MonadLift Result ITreeC where
+   monadLift r :=
+-  match r.match with
+-  | .ok a => .ret a
+-  | _ => .div -- TODO
++    open Classical in
++    if h : spec r (fun _ => True) then .ret (spec_exists_outcome h).choose else .div -- TODO
+ 
++open Classical in
+ theorem spec_coinSpec {α} {x : Result α} {p: Post α} : spec x p → coinSpec p x := by
+   intros s
+-  cases x
+-  · apply coinSpec.ret
+-    simp [spec_ok] at s
+-    assumption
+-  · simp at s
+-  · simp at s
++  have h : spec x (fun _ => True) := spec_mono s (fun _ _ => trivial)
++  change coinSpec p (if h : spec x (fun _ => True) then .ret (spec_exists_outcome h).choose else .div)
++  rw [dite_cond_eq_true (eq_true h)]
++  exact coinSpec.ret _ _ ((spec_exists_outcome h).choose_spec p s)
+ 
+ @[simp]
+ theorem qimp_coinSpec_unit {α} (P : Unit → Prop) (k : Unit → ITreeC α) (Q : α → Prop) :
+diff --git a/src/extract/ExtractBuiltinLean.ml b/src/extract/ExtractBuiltinLean.ml
+index 4000372..0ac0c3f 100644
+--- a/src/extract/ExtractBuiltinLean.ml
++++ b/src/extract/ExtractBuiltinLean.ml
+@@ -191,6 +191,13 @@ let lean_builtin_types =
+     mk_type "core::sync::atomic::AtomicBool" "core.sync.atomic.AtomicBool";
+     (* file: "Aeneas/Std/Core/Atomic.lean", line: 12 *)
+     mk_type "core::sync::atomic::AtomicU32" "core.sync.atomic.AtomicU32";
++    (* file: "Aeneas/Std/Random.lean", line: 70 *)
++    mk_type "rand_core::UnwrapErr" "rand_core.UnwrapErr";
++    (* file: "Aeneas/Std/Random.lean", line: 31 *)
++    mk_type "rand_core::os::OsError" "rand_core.os.OsError"
++      ~kind:(KEnum [ ("Failure", Some "failure") ]);
++    (* file: "Aeneas/Std/Random.lean", line: 26 *)
++    mk_type "rand_core::os::OsRng" "rand_core.os.OsRng";
+   ]
+ 
+ let lean_builtin_consts = []
+@@ -1366,6 +1373,42 @@ let lean_builtin_funs =
+       "core.str.iter.IteratorChars.next";
+     (* file: "Aeneas/Std/StringIter.lean", line: 31 *)
+     mk_fun "core::str::{str}::chars" "core.str.Str.chars";
++    (* file: "Aeneas/Std/Random.lean", line: 50 *)
++    mk_fun "rand_core::os::{core::fmt::Debug<rand_core::os::OsError>}::fmt"
++      "rand_core.os.OsError.Insts.CoreFmtDebug.fmt";
++    (* file: "Aeneas/Std/Random.lean", line: 56 *)
++    mk_fun "rand_core::os::{core::fmt::Display<rand_core::os::OsError>}::fmt"
++      "rand_core.os.OsError.Insts.CoreFmtDisplay.fmt";
++    (* file: "Aeneas/Std/Random.lean", line: 45 *)
++    mk_fun
++      "rand_core::os::{rand_core::TryRngCore<rand_core::os::OsRng, \
++       rand_core::os::OsError>}::try_fill_bytes"
++      "rand_core.os.OsRng.try_fill_bytes";
++    (* file: "Aeneas/Std/Random.lean", line: 35 *)
++    mk_fun
++      "rand_core::os::{rand_core::TryRngCore<rand_core::os::OsRng, \
++       rand_core::os::OsError>}::try_next_u32"
++      "rand_core.os.OsRng.try_next_u32";
++    (* file: "Aeneas/Std/Random.lean", line: 40 *)
++    mk_fun
++      "rand_core::os::{rand_core::TryRngCore<rand_core::os::OsRng, \
++       rand_core::os::OsError>}::try_next_u64"
++      "rand_core.os.OsRng.try_next_u64";
++    (* file: "Aeneas/Std/Random.lean", line: 111 *)
++    mk_fun
++      "rand_core::{rand_core::RngCore<rand_core::UnwrapErr<@R, \
++       @Clause0_Error>>}::fill_bytes"
++      "rand_core.UnwrapErr.fill_bytes";
++    (* file: "Aeneas/Std/Random.lean", line: 91 *)
++    mk_fun
++      "rand_core::{rand_core::RngCore<rand_core::UnwrapErr<@R, \
++       @Clause0_Error>>}::next_u32"
++      "rand_core.UnwrapErr.next_u32";
++    (* file: "Aeneas/Std/Random.lean", line: 101 *)
++    mk_fun
++      "rand_core::{rand_core::RngCore<rand_core::UnwrapErr<@R, \
++       @Clause0_Error>>}::next_u64"
++      "rand_core.UnwrapErr.next_u64";
+     (* file: "Aeneas/Std/Std/Io.lean", line: 7 *)
+     mk_fun "std::io::stdio::_print" "std.io.stdio._print";
+   ]
+@@ -1569,6 +1612,17 @@ let lean_builtin_trait_decls =
+           ("index", "index");
+           ("index_mut", "index_mut");
+         ];
++    (* file: "Aeneas/Std/Random.lean", line: 73 *)
++    mk_trait_decl "rand_core::TryRngCore" "rand_core.TryRngCore"
++      ~parent_clauses:[ "corefmtDebugInst"; "corefmtDisplayInst" ]
++      ~methods:
++        [
++          ("try_next_u32", "try_next_u32");
++          ("try_next_u64", "try_next_u64");
++          ("try_fill_bytes", "try_fill_bytes");
++          ("unwrap_err", "unwrap_err");
++        ]
++      ~default_methods:[ "unwrap_err" ];
+   ]
+ 
+ let lean_builtin_trait_impls =

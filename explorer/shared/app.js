@@ -9,13 +9,28 @@ const $ = s => document.querySelector(s);
 const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const titles = { rust:'Rust', aeneas:'Aeneas', spec:'Spec', crypto:'Crypto', bridge:'Bridge' };
 // `data`: the example shown, as its selected bridge method sees it; `item`: the selected atom;
-// `files`: the file shown in each panel.
-let data, item, home = false, state = {}, files = {}, drag = null;
+// `files`: the file shown in each panel. `compared`: when another bridge method is compared, its
+// data, atom and files, drawn in a second row of panels below the first.
+let data, item, home = false, state = {}, files = {}, drag = null, compared = null;
 const widths = new Map();
 const openProofs = new Set();
 const mobile = matchMedia('(max-width: 760px)');
 const icon = name => `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
 
+// The rows of panels: the selected bridge method, then the compared one. `key` starts the ids of
+// the row's panels.
+const views = () => [{ key:'', data, item, files }, ...(compared ? [{ key:'compare-', ...compared }] : [])];
+// The panels of the compared row that show another file than the row above; the others are hidden.
+const differing = () => compared ? Explorer.stages.filter(stage => compared.files[stage] !== files[stage]) : [];
+const viewOf = el => el.closest('[data-view="compare"]') && compared ? views()[1] : views()[0];
+// The bridge method `id` of the shown example, as the second row, with the selected atom; null if
+// `id` is not another method of the example. `requested` gives the file of each panel, if any.
+function compareView(id, requested = () => null) {
+  const example = Explorer.example(bundle, data.id);
+  if (!id || id === data.method?.id || !example.methods?.some(m => m.id === id)) return null;
+  const view = Explorer.view(example, id), atom = Explorer.item(view, state.item);
+  return { data:view, item:atom, files:Object.fromEntries(Explorer.stages.map(stage => [stage, Explorer.file(view, atom, stage, requested(stage))])) };
+}
 // Reads the state from the URL hash.
 function load() {
   const params = new URLSearchParams(location.hash.slice(1));
@@ -27,6 +42,8 @@ function load() {
     ...Panels.read(selected.params) };
   widths.set(Panels.signature(state), Panels.readWeights(state, selected.params.get('widths')));
   for (const stage of Explorer.stages) files[stage] = Explorer.file(data, item, stage, selected.params.get(`${stage}File`));
+  compared = compareView(params.get('compare'), stage => params.get(`compare-${stage}File`));
+  state.compare = compared?.data.method.id ?? '';
 }
 // Writes the state to the URL hash, replacing the current history entry.
 function save() {
@@ -34,17 +51,21 @@ function save() {
   const p = new URLSearchParams();
   for (const [k,v] of Object.entries(state)) if (v !== '') p.set(k, typeof v === 'boolean' ? +v : v);
   for (const stage of Explorer.stages) if (files[stage]) p.set(`${stage}File`, files[stage]);
+  if (compared) for (const stage of Explorer.stages) if (compared.files[stage]) p.set(`compare-${stage}File`, compared.files[stage]);
   p.set('widths', Panels.weights(state, widths.get(Panels.signature(state))).map(n => n.toFixed(6)).join(','));
   history.replaceState(null, '', `#${p}`);
 }
-// Selects atom `id`; after a click on a line (`origin`), that panel keeps its file and scroll.
+// Selects atom `id` in both rows; after a click on a line (`origin`), that panel keeps its file
+// and scroll.
 function select(id, origin) {
-  const selected = Explorer.selection(data,id,origin);
+  const own = key => origin?.key === key ? origin : null;
+  const selected = Explorer.selection(data,id,own(''));
   item = selected.item; files = selected.files; state.item = item?.id ?? '';
+  if (compared) Object.assign(compared, Explorer.selection(compared.data,id,own('compare-')));
   if (!item) state.mode = 'files';
   save(); render();
   if (origin && state.mode === 'files') {
-    const panel = $('#pane-body-'+origin.stage);
+    const panel = $('#pane-body-'+origin.key+origin.stage);
     panel.scrollTop = origin.top;
     panel.scrollLeft = origin.left;
   }
@@ -54,24 +75,25 @@ function highlight(line) {
   const parts = line.split(/(\/\/.*|--.*|"(?:\\.|[^"\\])*"|\b(?:pub|fn|let|mut|type|trait|struct|impl|def|abbrev|theorem|structure|namespace|end|import|open|where|do|by|pure|match|with|if|then|else|fun|return|some|none|Some|None)\b|\b\d+\b)/g);
   return parts.map((p,i) => i % 2 ? `<span class="token-${p.startsWith('//') || p.startsWith('--') ? 'comment' : /^\d/.test(p) ? 'number' : p.startsWith('"') ? 'string' : 'keyword'}">${esc(p)}</span>` : esc(p)).join('');
 }
-function ranges(stage) { return Explorer.entries(data,item,stage); }
+// The functions below draw the panels of one row, `v` (see `views`).
+function ranges(v, stage) { return Explorer.entries(v.data,v.item,stage); }
 // The text copied from a panel: the whole file, or the focused declarations.
-function visibleText(stage) {
-  const file = data.files[files[stage]];
+function visibleText(v, stage) {
+  const file = v.data.files[v.files[stage]];
   if (!file) return '';
   if (state.mode === 'files') return file.text;
-  const entries = ranges(stage).filter(r => r.file === file.path);
+  const entries = ranges(v, stage).filter(r => r.file === file.path);
   return entries.map(r => file.text.split('\n').slice(r.start-1,r.end).join('\n')).join('\n\n');
 }
 // Numbered lines of one part of a range: focus highlighting, assumption labels, and line numbers
 // that select their atom.
-function codePart(file, stage, part) {
+function codePart(v, file, stage, part) {
   const rows = part.text.replace(/\n$/, '').split('\n');
   let firstLine = part.line;
   if (part.column > 0 && !rows[0].trim()) { rows.shift(); firstLine++; }
   if (!rows.length) return '';
-  const selected = ranges(stage).filter(r => r.file === file.path);
-  const declarations = data.declarations.filter(d => d.file === file.path);
+  const selected = ranges(v, stage).filter(r => r.file === file.path);
+  const declarations = v.data.declarations.filter(d => d.file === file.path);
   let blockComment = false;
   return `<pre class="code${file.html ? ' hl lean' : ''}">${rows.map((line,i) => {
     const n = firstLine+i;
@@ -85,30 +107,30 @@ function codePart(file, stage, part) {
     const evidence = declaration && Explorer.evidence(declaration);
     const trustTitle = declaration && declaration.status + ': ' + declaration.type;
     const badge = evidence ? `<span class="evidence-label ${evidence.kind}" title="${esc(declaration.status)}">${evidence.label}</span>` : '';
-    const atom = Explorer.atomAt(data, stage, file.path, n);
+    const atom = Explorer.atomAt(v.data, stage, file.path, n);
     const number = atom ? `<button class="ln" data-atom="${esc(atom.id)}" title="Select ${esc(atom.name)}">${n}</button>` : `<span class="ln">${n}</span>`;
     return `${badge}<span class="line${focused ? ' focused':''}" data-line="${n}"${atom ? ` data-atom="${esc(atom.id)}"`:''}${declaration ? ` title="${esc(trustTitle)}"`:''}>${number}<code>${text || ' '}</code></span>`;
   }).join('')}</pre>`;
 }
 // A line range, with each theorem's proof in a folded `details` element.
-function code(file, stage, start, end) {
-  return Explorer.proofParts(file,data.declarations,{start,end}).map(part=>{
-    const content = codePart(file,stage,part);
+function code(v, file, stage, start, end) {
+  return Explorer.proofParts(file,v.data.declarations,{start,end}).map(part=>{
+    const content = codePart(v,file,stage,part);
     if (!part.declaration) return content;
-    const key = `${data.id}:${part.declaration.name}`;
+    const key = `${v.data.id}:${part.declaration.name}`;
     return `<details class="proof-body" data-proof="${esc(key)}"${openProofs.has(key)?' open':''}><summary aria-label="Proof of ${esc(part.declaration.name)}">Proof</summary>${content}</details>`;
   }).join('');
 }
 // A panel's content: the pending message, the declaration picker, and the source.
-function body(stage) {
-  const file = data.files[files[stage]];
-  const related = ranges(stage);
-  const status = item && ['spec','crypto','bridge'].includes(stage) && !related.length ? `<div class="stage-status">${Explorer.pending(data,item,stage)}</div>` : '';
-  if (!file) return `<div class="empty-additions"><strong>${Explorer.pending(data,item,stage)}</strong></div>`;
-  const declarations = data.declarations.filter(d => d.file === file.path);
+function body(v, stage) {
+  const file = v.data.files[v.files[stage]];
+  const related = ranges(v, stage);
+  const status = v.item && ['spec','crypto','bridge'].includes(stage) && !related.length ? `<div class="stage-status">${Explorer.pending(v.data,v.item,stage)}</div>` : '';
+  if (!file) return `<div class="empty-additions"><strong>${Explorer.pending(v.data,v.item,stage)}</strong></div>`;
+  const declarations = v.data.declarations.filter(d => d.file === file.path);
   const picker = declarations.length ? `<div class="related-context"><select data-declaration="${stage}" aria-label="${titles[stage]} declaration"><option value="">Declarations (${declarations.length})</option>${declarations.map(d => `<option value="${esc(d.name)}">${related.some(r=>r.name===d.name)?'* ':''}${esc(d.name)} (${esc(d.status)})</option>`).join('')}</select></div>` : '';
   const selected = state.mode === 'files' ? null : related.filter(r=>r.file===file.path);
-  return status + picker + Explorer.sourceBlocks(data,file,selected).map(r=>code(file,stage,r.start,r.end)).join('');
+  return status + picker + Explorer.sourceBlocks(v.data,file,selected).map(r=>code(v,file,stage,r.start,r.end)).join('');
 }
 // Overview: Rust is extracted to Aeneas, Spec states what the extracted function returns, and
 // Bridge relates the extracted function to Crypto, using Spec.
@@ -131,6 +153,8 @@ function resize() {
   if (mobile.matches || home) return;
   const l = layout();
   $('#panes').style.setProperty('--pane-columns',Object.values(l.sizes).map(n=>`${n}px`).join(' '));
+  // The compared row has its own columns: its expanded panels share the width equally.
+  $('#panes-compare').style.setProperty('--pane-columns',differing().map(stage=>state[stage]?'minmax(0,1fr)':`${Panels.railWidth}px`).join(' '));
   document.querySelectorAll('[data-resize]').forEach(el=>{
     const next=l.active[l.active.indexOf(el.dataset.resize)+1];
     el.setAttribute('aria-valuenow',Math.round(100*l.sizes[el.dataset.resize]/(l.sizes[el.dataset.resize]+l.sizes[next])));
@@ -170,11 +194,12 @@ function wireResize() {
 // Draws the page from the state, then attaches the handlers of the new panels. Each panel scrolls
 // to the selected atom, or keeps its position when `preserveScroll` is true or lists the panel.
 function render(preserveScroll = false) {
-  const scroll = new Map(Explorer.stages.map(stage => [stage, $('#pane-body-'+stage)?.scrollTop]));
+  const scroll = new Map(views().flatMap(v => Explorer.stages.map(stage => [v.key+stage, $('#pane-body-'+v.key+stage)?.scrollTop])));
   const keeps = stage => preserveScroll === true || (Array.isArray(preserveScroll) && preserveScroll.includes(stage));
   endDrag(true);
   document.title=`${data.name} - Bridging Examples`;
   $('#home').hidden=!home; $('#panes').hidden=home; document.body.classList.toggle('at-home',home);
+  for (const id of ['#panes-label','#panes-compare-label','#panes-compare']) $(id).hidden=home||!compared;
   $('#example-picker').value=home?'':data.id;
   if(home){document.title='Bridging Examples';return;}
   const methods=data.methods||[];
@@ -182,6 +207,15 @@ function render(preserveScroll = false) {
   $('#method-picker').innerHTML=methods.map(m=>`<option value="${esc(m.id)}" title="${esc(m.description)}">${esc(m.name)}</option>`).join('');
   $('#method-picker').value=data.method?.id ?? '';
   $('#method-picker').title=data.method?.description||'Bridge method';
+  $('.compare-picker').hidden=methods.length<2;
+  $('#compare-picker').innerHTML='<option value="">No comparison</option>'+methods.filter(m=>m.id!==data.method?.id).map(m=>`<option value="${esc(m.id)}" title="${esc(m.description)}">Compare with ${esc(m.name)}</option>`).join('');
+  $('#compare-picker').value=state.compare;
+  const label=v=>`<span>${esc(v.data.method.name)}</span> ${esc(v.data.method.description)}`;
+  if(compared){
+    const same=Explorer.stages.filter(stage=>!differing().includes(stage)).map(stage=>titles[stage]);
+    $('#panes-label').innerHTML=label(views()[0]);
+    $('#panes-compare-label').innerHTML=label(compared)+(same.length?`<em>Same as above: ${esc(same.join(', '))}</em>`:'');
+  }
   $('#item-picker').innerHTML=`<option value="">Declarations (${data.items.length})</option>`+data.items.map(i=>`<option value="${esc(i.id)}">${esc(i.name)}</option>`).join('');
   $('#item-picker').value=item?.id ?? '';
   $('#item-title').textContent=item?.name ?? data.name;
@@ -195,52 +229,58 @@ function render(preserveScroll = false) {
   $('#focus-declaration').setAttribute('aria-label',$('#focus-declaration').title);
   $('#font-size').value=state.font; document.documentElement.style.setProperty('--code-size',`${state.font}px`);
   const active=Panels.active(state);
-  $('#panes').innerHTML=Explorer.stages.map((stage,index)=>{
+  // The compared row shows only the panels that differ from the row above, without dividers.
+  const panes=v=>Explorer.stages.filter(stage=>!v.key||differing().includes(stage)).map(stage=>{
+    const index=Explorer.stages.indexOf(stage);
     const expanded=state[stage],disabled=expanded&&active.length===1;
     const label=`${expanded?'Minimize':'Restore'} ${titles[stage]}`;
     const toggle=`<button class="pane-toggle" data-toggle="${stage}" title="${label}" aria-label="${label}" aria-expanded="${expanded}"${disabled?' disabled':''}>${icon(expanded?'minus':'plus')}</button>`;
     // The expanded panels on either side. Every line between them is a divider that resizes them:
     // the edges of the two panels and, between minimized panels, the right edge of each one.
     const previous=Explorer.stages.slice(0,index).filter(s=>state[s]).pop(),next=Explorer.stages.slice(index+1).find(s=>state[s]);
-    const handle=(left,right,side)=>`<div class="pane-resizer${side}" data-resize="${left}" role="separator" tabindex="0" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-label="Resize ${titles[left]} and ${titles[right]}" title="Drag to resize; double-click to reset"></div>`;
+    const handle=(left,right,side)=>v.key?'':`<div class="pane-resizer${side}" data-resize="${left}" role="separator" tabindex="0" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-label="Resize ${titles[left]} and ${titles[right]}" title="Drag to resize; double-click to reset"></div>`;
     if(!expanded){
       const divider=previous&&next&&!state[Explorer.stages[index+1]]?handle(previous,next,''):'';
       return `<section class="pane ${stage} minimized"><div class="pane-header">${toggle}<h3>${titles[stage]}</h3></div>${divider}</section>`;
     }
-    const options=Explorer.files(data,stage),file=data.files[files[stage]];
+    const options=Explorer.files(v.data,stage),file=v.data.files[v.files[stage]];
     // Files of the example are named from its folder; shared files keep their path.
-    const short=p=>p.startsWith(data.dir+'/')?p.slice(data.dir.length+1):p;
+    const short=p=>p.startsWith(v.data.dir+'/')?p.slice(v.data.dir.length+1):p;
     const railsBefore=previous&&Explorer.stages[index-1]!==previous;
-    return `<section class="pane ${stage}"><div class="pane-header"><div class="pane-title"><h3>${titles[stage]}</h3><div class="pane-actions"><button class="pane-toggle" data-copy="${stage}" title="Copy displayed source" aria-label="Copy ${titles[stage]} source"${!file?' disabled':''}>${icon('copy')}</button><button class="pane-toggle" data-download="${stage}" title="Download complete file" aria-label="Download ${titles[stage]} file"${!file?' disabled':''}>${icon('download')}</button>${toggle}</div></div><label class="file-picker"><span>Files (${options.length})</span><select class="source-picker" data-source="${stage}" aria-label="${titles[stage]} file"${!options.length?' disabled':''}>${options.map(p=>`<option value="${esc(p)}" title="${esc(p)}"${files[stage]===p?' selected':''}>${esc(short(p))}</option>`).join('')}</select></label></div><div class="pane-body" id="pane-body-${stage}">${body(stage)}</div>${railsBefore?handle(previous,stage,' leading'):''}${next?handle(stage,next,''):''}</section>`;
+    return `<section class="pane ${stage}"><div class="pane-header"><div class="pane-title"><h3>${titles[stage]}</h3><div class="pane-actions"><button class="pane-toggle" data-copy="${stage}" title="Copy displayed source" aria-label="Copy ${titles[stage]} source"${!file?' disabled':''}>${icon('copy')}</button><button class="pane-toggle" data-download="${stage}" title="Download complete file" aria-label="Download ${titles[stage]} file"${!file?' disabled':''}>${icon('download')}</button>${toggle}</div></div><label class="file-picker"><span>Files (${options.length})</span><select class="source-picker" data-source="${stage}" aria-label="${titles[stage]} file"${!options.length?' disabled':''}>${options.map(p=>`<option value="${esc(p)}" title="${esc(p)}"${v.files[stage]===p?' selected':''}>${esc(short(p))}</option>`).join('')}</select></label></div><div class="pane-body" id="pane-body-${v.key}${stage}">${body(v,stage)}</div>${railsBefore?handle(previous,stage,' leading'):''}${next?handle(stage,next,''):''}</section>`;
   }).join('');
+  $('#panes').innerHTML=panes(views()[0]);
+  $('#panes-compare').innerHTML=compared?panes(views()[1]):'';
+  $('#panes-compare').hidden=home||!compared||!differing().length;
   for(const stage of Explorer.stages){$('#show-'+stage).checked=state[stage];$('#show-'+stage).disabled=state[stage]&&active.length===1;}
   document.querySelectorAll('.line[data-atom]').forEach(el=>el.onclick=event=>{
-    if (!Explorer.shouldSelectCode(event,window.getSelection()?.toString()) || el.dataset.atom === item?.id) return;
+    const v = viewOf(el);
+    if (!Explorer.shouldSelectCode(event,window.getSelection()?.toString()) || el.dataset.atom === v.item?.id) return;
     const panel = el.closest('.pane-body');
-    const stage = panel.id.slice('pane-body-'.length);
-    select(el.dataset.atom,{stage,file:files[stage],top:panel.scrollTop,left:panel.scrollLeft});
+    const stage = panel.id.slice(('pane-body-'+v.key).length);
+    select(el.dataset.atom,{key:v.key,stage,file:v.files[stage],top:panel.scrollTop,left:panel.scrollLeft});
   });
   document.querySelectorAll('[data-toggle]').forEach(el=>el.onclick=()=>{Panels.set(state,el.dataset.toggle,!state[el.dataset.toggle]);save();render(true);});
   document.querySelectorAll('[data-proof]').forEach(el=>el.ontoggle=()=>{
     if(el.open)openProofs.add(el.dataset.proof);else openProofs.delete(el.dataset.proof);
   });
-  document.querySelectorAll('[data-source]').forEach(el=>el.onchange=()=>{files[el.dataset.source]=el.value;save();render();});
+  document.querySelectorAll('[data-source]').forEach(el=>el.onchange=()=>{viewOf(el).files[el.dataset.source]=el.value;save();render();});
   document.querySelectorAll('[data-copy]').forEach(el=>el.onclick=async()=>{
-    const text=visibleText(el.dataset.copy);
+    const text=visibleText(viewOf(el),el.dataset.copy);
     try{await navigator.clipboard.writeText(text);}catch{const area=document.createElement('textarea');area.value=text;document.body.append(area);area.select();document.execCommand('copy');area.remove();}
   });
   document.querySelectorAll('[data-download]').forEach(el=>el.onclick=()=>{
-    const file=data.files[files[el.dataset.download]],a=document.createElement('a');
+    const v=viewOf(el),file=v.data.files[v.files[el.dataset.download]],a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([file.text],{type:'text/plain'}));a.download=file.path.split('/').at(-1);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   });
   document.querySelectorAll('[data-declaration]').forEach(el=>el.onchange=()=>{
-    const d=data.declarations.find(d=>d.name===el.value); if(!d)return;
-    const panel=$('#pane-body-'+el.dataset.declaration);
+    const v=viewOf(el),d=v.data.declarations.find(d=>d.name===el.value); if(!d)return;
+    const panel=$('#pane-body-'+v.key+el.dataset.declaration);
     panel.querySelector(`[data-line="${d.start}"]`)?.scrollIntoView({block:'center'});
     panel.querySelectorAll('.line').forEach(line=>line.classList.toggle('active-addition',+line.dataset.line>=d.start&&+line.dataset.line<=d.end));
   });
   wireResize();resize();bindVerso();
-  if(state.mode==='files')for(const stage of active){const first=ranges(stage).find(r=>r.file===files[stage]);const panel=$('#pane-body-'+stage);const line=first&&panel?.querySelector(`[data-line="${first.start}"]`);const target=line;if(keeps(stage)&&scroll.get(stage)!=null)panel.scrollTop=scroll.get(stage);else if(target)panel.scrollTop=Math.max(0,target.offsetTop-panel.offsetTop-45);}
+  if(state.mode==='files')for(const v of views())for(const stage of active){const first=ranges(v,stage).find(r=>r.file===v.files[stage]);const panel=$('#pane-body-'+v.key+stage);const line=first&&panel?.querySelector(`[data-line="${first.start}"]`);const target=line;if(keeps(stage)&&scroll.get(v.key+stage)!=null)panel.scrollTop=scroll.get(v.key+stage);else if(target)panel.scrollTop=Math.max(0,target.offsetTop-panel.offsetTop-45);}
 }
 // The Sources dialog: revision, assumptions, coverage, tool versions and file hashes.
 function provenance() {
@@ -253,7 +293,7 @@ function provenance() {
 $('#example-picker').innerHTML='<option value="">Overview</option>'+bundle.examples.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
 $('#example-picker').onchange=e=>{
   if(!e.target.value){location.hash='view=home';return;}
-  home=false;data=Explorer.view(Explorer.example(bundle,e.target.value));state.example=data.id;state.method=data.method?.id ?? '';select(null);
+  home=false;data=Explorer.view(Explorer.example(bundle,e.target.value));state.example=data.id;state.method=data.method?.id ?? '';compared=null;state.compare='';select(null);
 };
 // Switches the bridge method and keeps the selected atom. A panel moves to the file that holds the
 // atom's declarations in the new method; a panel whose file stays keeps its scroll position.
@@ -265,8 +305,11 @@ $('#method-picker').onchange=e=>{
     const entries=Explorer.entries(data,item,stage);
     files[stage]=Explorer.file(data,item,stage,entries.length&&!entries.some(r=>r.file===files[stage])?null:files[stage]);
   }
+  if(compared?.data.method.id===data.method?.id){compared=null;state.compare='';}
   save();render(Explorer.stages.filter(stage=>files[stage]===before[stage]));
 };
+// Compares with another bridge method, drawn below, or stops comparing.
+$('#compare-picker').onchange=e=>{compared=compareView(e.target.value);state.compare=compared?.data.method.id ?? '';save();render();};
 $('#home').innerHTML=overview();
 $('#item-picker').onchange=e=>select(e.target.value);
 $('#focus-declaration').onclick=()=>{state.mode=Explorer.toggleMode(state.mode);save();render();};

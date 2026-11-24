@@ -14,11 +14,11 @@ name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio.git"
 rev = "2567392aabfcf1c29a8a7958e4f750829952d83f"
 
+# Aeneas at da2b22e with `aeneas.patch` applied (`Result` has a `random` effect), checked out by
+# `scripts/aeneas.sh`.
 [[require]]
 name = "aeneas"
-git = "https://github.com/AeneasVerif/aeneas.git"
-rev = "da2b22e78d8fd5f076a902a5617c34038409fb79"
-subDir = "backends/lean"
+path = "aeneas/backends/lean"
 
 # One folder per example: the generated Aeneas.lean and the handwritten Spec, Crypto and Bridge,
 # with one subfolder per bridge when the example has several.

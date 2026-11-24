@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check out the patched Aeneas Lean library
+        run: bash scripts/aeneas.sh
       - uses: leanprover/lean-action@v1
       - name: Install pinned extraction and Rust tools
         run: bash scripts/setup-tools.sh

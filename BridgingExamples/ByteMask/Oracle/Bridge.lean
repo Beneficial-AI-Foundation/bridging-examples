@@ -1,5 +1,5 @@
-import BridgingExamples.ByteMask.Oracle.Spec
-import BridgingExamples.ByteMask.Oracle.Crypto
+import BridgingExamples.ByteMask.Spec
+import BridgingExamples.ByteMask.Crypto
 import Common.Correspondence
 import Common.Metadata
 import Common.Oracle.Tape
@@ -25,7 +25,7 @@ oracle definitions are in `Common/Oracle/Rng.lean`.
 
 namespace byte_mask.Oracle.Bridge
 
-open Aeneas Aeneas.Std BridgingExamples BridgingExamples.Oracle byte_mask.Oracle.Spec OracleSpec
+open Aeneas Aeneas.Std BridgingExamples BridgingExamples.Oracle byte_mask.Spec OracleSpec
   OracleComp
 
 /-! ## `mask` as an oracle program -/
@@ -67,12 +67,6 @@ theorem maskRest_of_val (v x : U8) (b : Slice U8) (hb : b.val = [x]) :
     Aeneas.Std.bind_assoc, Aeneas.Std.bind_ok, uncurry_eq]
   simp [Array.from_slice, Array.index_usize, hb]
 
-/-- `List.Vector.head` is a bijection from byte vectors of length 1 to bytes. -/
-theorem head_bijective : Function.Bijective (List.Vector.head : List.Vector U8 1 → U8) := by
-  refine ⟨fun a b h => ?_, fun x => ⟨x ::ᵥ List.Vector.nil, by simp⟩⟩
-  rw [← List.Vector.cons_head_tail a, ← List.Vector.cons_head_tail b, h,
-    List.Vector.eq_nil a.tail, List.Vector.eq_nil b.tail]
-
 /-- Run with `unifImpl`, `maskProg v` has the distribution of `Result.ok <$> Crypto.mask v`. -/
 @[bridge_for mask]
 theorem maskProg_bridge (v : U8) :
@@ -101,14 +95,20 @@ theorem maskProg_bridge (v : U8) :
 
 /-- The assumption on `fill_bytes`: from a state sampled by `seed`, it answers every oracle program
 with `ByteBound p n` as `unifImpl` does, in distribution. This is `IdealRng inst.fill_bytes seed n`
-unfolded. `IdealRng` states its limits. A generator whose `fill_bytes` is `tapeFill` satisfies it
-with the seed `tapeSeed n` (`idealRng_tape`). -/
+unfolded (`fill_bytes_assumption_iff`). `IdealRng` states its limits. A generator whose
+`fill_bytes` is `tapeFill` satisfies it with the seed `tapeSeed n` (`idealRng_tape`). -/
 def rand_core.RngCore.fill_bytes_assumption {R : Type} (inst : rand_core.RngCore R)
     (seed : ProbComp R) (n : ℕ) : Prop :=
   ∀ {α : Type} (p : OracleComp FillSpec (Result α)), ByteBound p n →
     (do let rng ← seed
         pure (Prod.fst <$> runProg inst.fill_bytes p rng)) =ᵈ
     simulateQ unifImpl p
+
+/-- `fill_bytes_assumption` is `IdealRng` unfolded. -/
+theorem rand_core.RngCore.fill_bytes_assumption_iff {R : Type} (inst : rand_core.RngCore R)
+    (seed : ProbComp R) (n : ℕ) :
+    rand_core.RngCore.fill_bytes_assumption inst seed n ↔ IdealRng inst.fill_bytes seed n :=
+  Iff.rfl
 
 /-- If `fill_bytes_assumption inst seed 1`, then `mask inst rng v`, with `rng` sampled by `seed`
 and the final state dropped, has the distribution of `Result.ok <$> Crypto.mask v`. The theorem
@@ -127,6 +127,6 @@ theorem unmask_bridge (pad masked : U8) :
     (pure (unmask pad masked) : ProbComp _) =ᵈ
     (do let r ← Crypto.unmask pad masked
         pure (Result.ok r)) :=
-  bridge_of_spec (Spec.unmask_spec pad masked)
+  bridge_of_spec (Spec.unmask_spec pad masked) (by simp [unmask])
 
 end byte_mask.Oracle.Bridge

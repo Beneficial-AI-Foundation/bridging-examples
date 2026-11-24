@@ -32,16 +32,21 @@ theorem eq_of_getElem! (a b : Array U8 16#usize)
   have := h j (by simp at hja; omega)
   rwa [getElem!_pos _ j hja, getElem!_pos _ j hjb] at this
 
-/-- If `i ≤ 16` and the first `i` entries of `c` are the XORs of `key` and `message`, then
-`encrypt_loop key message c i` returns `xorBlock key message`. -/
-theorem encrypt_loop_spec (key message c : Array U8 16#usize) (i : Usize)
-    (hi : i.val ≤ 16)
-    (hc : ∀ j < i.val, c.val[j]! = key.val[j]! ^^^ message.val[j]!) :
-    encrypt_loop key message c i ⦃ r => r = xorBlock key message ⦄ := by
-  unfold encrypt_loop
-  apply loop.spec_decr_nat (fun p => 16 - p.2.val)
-    (fun p => p.2.val ≤ 16 ∧ ∀ j < p.2.val, p.1.val[j]! = key.val[j]! ^^^ message.val[j]!)
-  · rintro ⟨c', i'⟩ ⟨hi', hc'⟩
+/-- The invariant of `encrypt_loop`: `i ≤ 16` and the first `i` entries of `c` are the XORs of
+`key` and `message`. -/
+def encryptInv (key message : Array U8 16#usize) (p : Array U8 16#usize × Usize) : Prop :=
+  p.2.val ≤ 16 ∧ ∀ j < p.2.val, p.1.val[j]! = key.val[j]! ^^^ message.val[j]!
+
+/-- One step of `encrypt_loop` keeps `encryptInv` and decreases `16 - i`, or returns
+`xorBlock key message`. -/
+theorem encrypt_loop_body_spec (key message c' : Array U8 16#usize) (i' : Usize)
+    (hp : encryptInv key message (c', i')) :
+    encrypt_loop.body key message c' i' ⦃ r =>
+      match r with
+      | .done y => y = xorBlock key message
+      | .cont p' => encryptInv key message p' ∧ 16 - p'.2.val < 16 - i'.val ⦄ := by
+  obtain ⟨hi', hc'⟩ := hp
+  · simp only [encryptInv]
     simp only [encrypt_loop.body]
     split
     · step*
@@ -69,6 +74,28 @@ theorem encrypt_loop_spec (key message c : Array U8 16#usize) (i : Usize)
       intro j hj
       rw [xorBlock_getElem! _ _ _ hj]
       exact hc' j (by scalar_tac)
+
+/-- One step of `encrypt_loop` does not start by sampling. -/
+theorem encrypt_loop_body_noSample (key message c : Array U8 16#usize) (i : Usize) :
+    NoSample (encrypt_loop.body key message c i) := by
+  unfold encrypt_loop.body
+  split
+  · simp only [HAdd.hAdd, Add.add, UScalar.add, UScalar.tryMk, UScalar.tryMkOpt,
+      Array.index_usize, Array.update, lift]
+    repeat' split
+    all_goals simp
+  · simp
+
+/-- If `i ≤ 16` and the first `i` entries of `c` are the XORs of `key` and `message`, then
+`encrypt_loop key message c i` returns `xorBlock key message`. -/
+theorem encrypt_loop_spec (key message c : Array U8 16#usize) (i : Usize)
+    (hi : i.val ≤ 16)
+    (hc : ∀ j < i.val, c.val[j]! = key.val[j]! ^^^ message.val[j]!) :
+    encrypt_loop key message c i ⦃ r => r = xorBlock key message ⦄ := by
+  unfold encrypt_loop
+  apply loop.spec_decr_nat (fun p => 16 - p.2.val) (encryptInv key message)
+  · rintro ⟨c', i'⟩ hp
+    exact WP.spec_mono (encrypt_loop_body_spec key message c' i' hp) fun r h => by cases r <;> exact h
   · exact ⟨hi, hc⟩
 
 /-- `encrypt key message` returns `xorBlock key message`. -/
@@ -80,7 +107,18 @@ theorem encrypt_spec (key message : Array U8 16#usize) :
 
 theorem encrypt_eq (key message : Array U8 16#usize) :
     encrypt key message = Result.ok (xorBlock key message) := by
-  obtain ⟨c, hc, rfl⟩ := returns (encrypt_spec key message)
+  unfold encrypt encrypt_loop
+  have h := loop_returns (fun p : Array U8 16#usize × Usize => 16 - p.2.val)
+    (encryptInv key message) (· = xorBlock key message)
+    (fun (ciphertext1, i1) => encrypt_loop.body key message ciphertext1 i1)
+    (Array.repeat 16#usize 0#u8, 0#usize)
+    (by
+      rintro ⟨c', i'⟩ hp
+      exact WP.spec_mono (encrypt_loop_body_spec key message c' i' hp) fun r h => by
+        cases r <;> exact h)
+    (by rintro ⟨c', i'⟩ _; exact encrypt_loop_body_noSample key message c' i')
+    ⟨by simp, by simp⟩
+  obtain ⟨c, hc, rfl⟩ := h
   exact hc
 
 /-- `decrypt key c` returns `xorBlock key c`. -/

@@ -30,11 +30,20 @@ expected = {
     "aeneas": "da2b22e78d8fd5f076a902a5617c34038409fb79",
 }
 for package in manifest["packages"]:
-    name, rev = package["name"], package["rev"]
-    require(name not in expected or rev == expected[name], f"Unexpected {name} manifest pin")
-    checkout = root / ".lake/packages" / name
+    name = package["name"]
+    if name == "aeneas":
+        # The patched checkout of scripts/aeneas.sh, required by path.
+        require(package["type"] == "path" and package["dir"] == "aeneas/backends/lean",
+                "Unexpected aeneas manifest entry")
+        checkout, rev = root / "aeneas", expected[name]
+        require(subprocess.run(["bash", str(root / "scripts/aeneas.sh"), "check"]).returncode == 0,
+                "The aeneas checkout is not the pinned commit with aeneas.patch applied")
+    else:
+        rev = package["rev"]
+        require(name not in expected or rev == expected[name], f"Unexpected {name} manifest pin")
+        checkout = root / ".lake/packages" / name
     require(output("git", "-C", str(checkout), "rev-parse", "HEAD") == rev,
-            f"{name} checkout does not match lake-manifest.json")
+            f"{name} checkout does not match the expected revision")
 require(expected.keys() <= {p["name"] for p in manifest["packages"]},
         "Missing direct dependencies in manifest")
 if args.lean_only:
@@ -42,7 +51,7 @@ if args.lean_only:
     raise SystemExit(0)
 
 charon_pin = "".join(
-    line.strip() for line in (root / ".lake/packages/aeneas/charon-pin").read_text().splitlines()
+    line.strip() for line in (root / "aeneas/charon-pin").read_text().splitlines()
     if not line.startswith("#")
 )
 require(charon_pin == "40ca4ab6c10ecb7629320d6eccc0f41423fbe889", "Unexpected Charon pin")

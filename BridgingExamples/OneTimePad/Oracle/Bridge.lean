@@ -61,7 +61,7 @@ theorem encrypt_bridge (key message : Block) :
     (pure (encrypt key message) : ProbComp _) =ᵈ
     (do let c ← otp.encrypt key message
         pure (Result.ok c)) :=
-  bridge_of_spec (Spec.encrypt_spec key message)
+  bridge_of_spec (Spec.encrypt_spec key message) (by simp [Spec.encrypt_eq])
 
 /-- The value of a successful result, and `none` for a failure or divergence. -/
 def toOption {α : Type} (r : Result α) : Option α :=
