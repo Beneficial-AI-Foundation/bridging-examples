@@ -11,3 +11,14 @@
 /.agents/
 /.codex/
 
+
+# LaTeX build files of the slides
+/slides/**/*.aux
+/slides/**/*.fdb_latexmk
+/slides/**/*.fls
+/slides/**/*.log
+/slides/**/*.nav
+/slides/**/*.out
+/slides/**/*.snm
+/slides/**/*.toc
+/slides/**/*.vrb

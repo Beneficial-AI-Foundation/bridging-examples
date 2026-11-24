@@ -1,0 +1,424 @@
+% Randomness alternatives, copied from spqr-sm-bridge and updated after bridging-examples #7 and #9.
+% Build: latexmk -lualatex slides.tex
+\input{../common/preamble}
+\setbeamerfont{frametitle}{size=\large, series=\bfseries}
+
+\title{Random bytes in the bridge: four approaches}
+\subtitle{Bridging examples, randomness alternatives}
+
+\tikzset{
+  cell/.style={draw=realc, fill=realc!8, minimum width=0.42cm, minimum height=0.42cm,
+    inner sep=0pt, font=\tiny},
+  readcell/.style={cell, fill=realc!35},
+  box/.append style={font=\footnotesize},
+  line/.style={font=\scriptsize\ttfamily, anchor=west, inner sep=2pt},
+}
+\newcommand{\source}[1]{\vspace*{-0.6em}{\footnotesize\textcolor{trustc}{#1}}\par\vspace{0.2em}}
+\newcommand{\slidenote}[1]{\par\vspace{0.6em}\centering{\footnotesize #1}\par}
+% Bullet items after a diagram: \slidebullets{\item ... \item ...}
+\newcommand{\slidebullets}[1]{\par\vspace{0.4em}\centering
+  \begin{minipage}{0.92\textwidth}\footnotesize
+    \begin{itemize}\setlength{\itemsep}{0.15em}#1\end{itemize}
+  \end{minipage}\par\vspace{0.5em}}
+\newcommand{\pro}{\textcolor{proofc}{\textbf{+}}}
+\newcommand{\con}{\textcolor{gapc}{\textbf{--}}}
+\newcommand{\yes}{\textcolor{proofc}{\textbf{yes}}}
+\newcommand{\no}{\textcolor{gapc}{\textbf{no}}}
+% Pros and cons in two columns: \proscons{pros}{cons}
+\newcommand{\proscons}[2]{%
+  \vspace{0.6em}
+  \raggedright
+  \begin{columns}[T]
+    \column{0.42\textwidth}\scriptsize
+    \textbf{\textcolor{proofc}{For}}\\[0.2em] #1
+    \column{0.42\textwidth}\scriptsize
+    \textbf{\textcolor{gapc}{Against}}\\[0.2em] #2
+  \end{columns}}
+
+\begin{document}
+
+% ---------------------------------------------------------------------------
+\begin{frame}
+  \titlepage
+  \centering
+  {\footnotesize\textcolor{trustc}{Aeneas code is deterministic. VCVio proofs need
+  distributions. Where does randomness enter?}}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}[t]{The running example: \code{mask}}
+  \vfill
+  \centering
+  \begin{tikzpicture}[
+      rs/.style={font=\scriptsize\ttfamily, anchor=west, inner sep=1pt},
+      mid/.style={font=\scriptsize, text=ink!70, anchor=center}]
+    % highlight of the one row that differs
+    \fill[gapc!10, rounded corners=2pt] (-6.6, -1.28) rectangle (6.6, -0.72);
+    % Rust
+    \node[font=\small\bfseries, text=realc, anchor=west] at (-6.4, 0.75) {Rust \code{mask}};
+    \node[rs] at (-6.4, 0.0)  {fn mask(rng: \&mut R, v: u8)};
+    \node[rs] at (-6.4, -0.5) {\ \ let mut pad = [0u8; 1];};
+    \node[rs] at (-6.4, -1.0) {\ \ rng.fill\_bytes(\&mut pad);};
+    \node[rs] at (-6.4, -1.5) {\ \ (pad[0], v \textasciicircum{} pad[0])};
+    \begin{scope}[on background layer]
+      \draw[realc, thick, rounded corners=3pt, fill=realc!5] (-6.55, 0.35) rectangle (-1.75, -1.85);
+    \end{scope}
+    % VCVio
+    \node[font=\small\bfseries, text=refc, anchor=west] at (1.95, 0.75) {VCVio \code{Crypto.mask}};
+    \node[rs] at (1.95, 0.0)  {def mask (v : U8) :=};
+    \node[rs] at (1.95, -1.0) {\ \ let pad ← \$ᵗ U8};
+    \node[rs] at (1.95, -1.5) {\ \ return (pad, v ⊕ pad)};
+    \begin{scope}[on background layer]
+      \draw[refc, thick, rounded corners=3pt, fill=refc!5] (1.8, 0.35) rectangle (6.55, -1.85);
+    \end{scope}
+    % middle column: how the rows relate
+    \node[mid] at (0, 0.0)  {input \code{v}};
+    \node[mid, text=gapc] at (0, -1.0) {\textbf{get the byte \code{pad}}};
+    \node[mid] at (0, -1.5) {same output};
+    % the difference, spelled out
+    \node[font=\scriptsize, text=realc, align=center] at (-4.15, -2.5)
+      {\code{pad} = what the generator writes\\one fixed answer};
+    \node[font=\scriptsize, text=refc, align=center] at (4.15, -2.5)
+      {\code{pad} = uniform random byte\\a distribution over 256 answers};
+  \end{tikzpicture}
+
+  \vspace{1.2em}
+  \slidebullets{
+    \item Same computation. Only the line that gets \code{pad} differs.
+    \item \code{Crypto.mask} is what \code{mask} computes when the generator is perfect.}
+  \vfill
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}[t]{Where the bytes really come from}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[tool, text width=1.2cm, minimum height=1.3cm] (app) at (0, 0) {app};
+    \node[impl, text width=2.6cm, minimum height=1.3cm] (entry) at (2.9, 0) {libsignal\\creates \code{OsRng}};
+    \node[impl, text width=2.8cm, minimum height=1.3cm] (send) at (6.9, 0) {\code{spqr::send<R>}\\calls \code{fill\_bytes}};
+    \node[trust, text width=1.4cm, minimum height=1.3cm] (os) at (11.9, 0) {OS};
+    \draw[flow] (app) -- (entry);
+    \draw[flow] (entry) -- node[above, label] {\code{OsRng}} (send);
+    \draw[flow, trustc] ($(send.east)+(0,0.25)$) -- node[above, label, text=trustc] {OS call} ($(os.west)+(0,0.25)$);
+    \draw[flow, trustc] ($(os.west)+(0,-0.25)$) -- node[below, label, text=trustc] {random bytes} ($(send.east)+(0,-0.25)$);
+    \draw[decorate, decoration={brace, amplitude=5pt, mirror}, realc, thick]
+      (send.west |- 0,-0.95) -- (send.east |- 0,-0.95)
+      node[midway, below=6pt, label, text=realc] {Aeneas sees this};
+    \draw[decorate, decoration={brace, amplitude=5pt, mirror}, trustc, thick]
+      (os.west |- 0,-0.95) -- (os.east |- 0,-0.95)
+      node[midway, below=6pt, label, text=trustc] {outside Lean};
+  \end{tikzpicture}
+  \vfill
+  \slidebullets{
+    \item Inside \code{send}, each \code{fill\_bytes} on \code{OsRng} asks the operating system (OS) for bytes.
+    \item \code{OsRng} is an empty Rust struct: it stores no seed and no bytes. All its bytes come from the OS.
+    \item All four approaches below trust the OS: \textcolor{trustc}{``its bytes are uniform''}. Lean cannot check this.}
+  \vfill
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}[t]{The problem}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[impl, text width=4.2cm, minimum height=2.0cm] (l) at (0, 0) {%
+      \textbf{Aeneas}\\[4pt]
+      \code{mask inst rng v : Result \_}\\[4pt]
+      same \code{rng} in, same bytes out};
+    \node[spec, text width=4.2cm, minimum height=2.0cm] (r) at (9.6, 0) {%
+      \textbf{VCVio}\\[4pt]
+      \code{Crypto.mask v : ProbComp \_}\\[4pt]
+      a distribution};
+    \node[gap, text width=2.0cm] (g) at (4.8, 0) {\textbf{?}};
+    \draw[gapc, dashed, thick] (l) -- (g) -- (r);
+  \end{tikzpicture}
+
+  \vspace{1.2em}
+  \slidebullets{
+    \item Goal: \emph{if} the generator gives uniform bytes, independent of \code{v}, \emph{then} Rust \code{mask} $=$ \code{Crypto.mask}.
+    \item The approaches below differ in how they state that ``if''.}
+  \vfill
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}[t]{Generators: random state, deterministic calls}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[font=\small\bfseries, text=realc] at (-3.6, 1.0) {Rust};
+    \node[impl, text width=5.4cm] at (-3.6, 0) {%
+      \code{StdRng}, \code{ChaCha20Rng}:\\seeded once, then deterministic\\[3pt]
+      exception: \code{OsRng} asks the OS};
+    \node[font=\small\bfseries, text=refc] at (3.6, 1.0) {Lean, after Aeneas};
+    \node[spec, text width=5.4cm] at (3.6, 0) {%
+      \code{fill\_bytes : R → Slice U8 →}\\\code{\ \ Result (R × Slice U8)}\\[3pt]
+      one state, one answer};
+  \end{tikzpicture}
+
+  \vspace{1.2em}
+  \slidebullets{
+    \item Generators typically come with a random state prefilled and behave deterministically afterwards.
+    \item With Aeneas today, extracted code is deterministic. Randomness can only enter through its inputs, such as the starting state.
+    \item Approaches 1 to 3 sample the starting state of the generator. Approach 4 adds a sampling step to Aeneas, and assumes that \code{fill\_bytes} uses it.}
+  \vfill
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}[t]{How we compare them}
+  \vfill
+  \centering
+  \begin{tikzpicture}
+    \node[box, font=\small, text width=9.6cm, align=left] at (0, 0) {\textbf{Q1.} Is the ``if'' a Lean statement, in one theorem?};
+    \node[box, font=\small, text width=9.6cm, align=left] at (0, -0.85) {\textbf{Q2.} How much extra work per function?};
+    \node[box, font=\small, text width=9.6cm, align=left] at (0, -1.7) {\textbf{Q3.} Does the bridge describe the state after the call?};
+  \end{tikzpicture}
+  \vfill
+  {\color{trustc!50}\rule{0.85\textwidth}{0.4pt}}
+  \vfill
+  {\footnotesize\textcolor{trustc}{How to read the diagrams}}\par\vspace{0.6em}
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[impl, minimum width=2.6cm] at (0, 0) {extracted code};
+    \node[spec, minimum width=2.6cm] at (3.2, 0) {VCVio};
+    \node[proof, minimum width=2.6cm] at (6.4, 0) {written by us};
+    \node[trust, minimum width=2.6cm] at (0, -1.0) {assumption};
+    \node[gap, minimum width=2.6cm] at (3.2, -1.0) {missing};
+    \draw[proved] (5.3, -1.0) -- (6.3, -1.0) node[right, label, font=\footnotesize, text=proofc] {proved equal};
+  \end{tikzpicture}
+  \vfill
+\end{frame}
+
+% ===========================================================================
+\begin{frame}[t]{1. Random tape}
+  \source{spqr-sm-bridge before \#10. Now the witness for 2 and 3 (\code{tapeFill}).}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[spec, text width=2.0cm] (samp) at (0, 0) {sample\\64 bytes};
+    \foreach \i in {0,...,7} {
+      \ifnum\i<1
+        \node[readcell] (c\i) at (2.9+0.42*\i, 0) {};
+      \else
+        \node[cell] (c\i) at (2.9+0.42*\i, 0) {};
+      \fi
+    }
+    \node at (6.5, 0) {$\cdots$};
+    \node[cell] (clast) at (7.0, 0) {};
+    \draw[flow] (samp) -- (c0.west);
+    \node[label, text=realc, anchor=south] at (c0.north) {read};
+    \draw[decorate, decoration={brace, amplitude=4pt, mirror}, gapc, thick]
+      ($(c1.south west)+(0,-0.1)$) -- ($(clast.south east)+(0,-0.1)$)
+      node[midway, below=4pt, label, text=gapc] {never read};
+    \node[impl, text width=2.4cm] (run) at (10.0, 0) {\code{mask} on the tape};
+    \draw[flow] (clast.east) -- (run);
+    \node[spec, text width=2.4cm] (cr) at (10.0, -1.8) {\code{Crypto.mask}};
+    \draw[proved] (run) -- (cr);
+  \end{tikzpicture}
+
+  \slidebullets{
+    \item Roll all the dice first. The code reads them.
+    \item The prefilled state holds every byte that the code will read.}
+  \vfill
+  \proscons{%
+    \pro\ No change to Aeneas\\[0.2em]
+    \pro\ Simple\\[0.2em]
+    \pro\ Meets the assumptions of 2 and 3}{%
+    \con\ Q1: no. The ``if'' is prose\\[0.2em]
+    \con\ Q2: a tape length per function\\[0.2em]
+    \con\ Q2: lemmas for unread bytes}
+  \vfill
+\end{frame}
+
+% ===========================================================================
+\begin{frame}[t]{2. Entropy in the generator state}
+  \source{bridging-examples \#7, \#9 (\code{EntropyRng}). Bounded form: \code{RngContract}, removed in \#1.}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[trust, minimum width=2.0cm] (s2) at (0, 0) {\code{states 2}};
+    \node[trust, minimum width=2.0cm] (s1) at (5.0, 0) {\code{states 1}};
+    \node[trust, minimum width=2.0cm] (s0) at (10.0, 0) {\code{states 0}};
+    \node[spec] (b1) at (2.5, -1.2) {uniform byte};
+    \node[spec] (b2) at (7.5, -1.2) {uniform byte};
+    \draw[flow, realc] (s2) -- node[above, label, text=realc] {\code{fill\_bytes}} (s1);
+    \draw[flow, realc] (s1) -- node[above, label, text=realc] {\code{fill\_bytes}} (s0);
+    \draw[flow, refc] ($(s2)!0.5!(s1)$) -- (b1);
+    \draw[flow, refc] ($(s1)!0.5!(s0)$) -- (b2);
+  \end{tikzpicture}
+
+  \slidebullets{
+    \item A call for $k$ bytes from \code{states (n + k)} returns $k$ uniform bytes.
+    \item The new state is in \code{states n}, independent of those bytes.}
+  \proscons{%
+    \pro\ No change to Aeneas\\[0.1em]
+    \pro\ Q1: yes\\[0.1em]
+    \pro\ Q2: no oracle program\\[0.1em]
+    \pro\ Q3: yes. Bridges of separate\\\ \ \ calls compose}{%
+    \con\ Q2: a byte count per function\\[0.1em]
+    \con\ Stronger than \code{IdealRng}\\[0.1em]
+    \con\ For all $n$: infinite state.\\\ \ \ A bound $N$ fixes this\\[0.1em]
+    \con\ Randomness must come from the state.\\\ \ \ \code{OsRng} keeps it in the OS}
+  \vfill
+\end{frame}
+
+% ===========================================================================
+\begin{frame}[t]{3. Oracle program + \code{IdealRng}}
+  \source{\scriptsize bridging-examples\#3, spqr-sm-bridge\#10}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[proof, text width=7.2cm] (p) at (0, 0) {\code{maskProg v = b <- query ; maskRest v b}};
+    \node[impl, text width=2.8cm] (l) at (-3.0, -1.1) {Rust \code{mask}};
+    \node[spec, text width=2.8cm] (r) at (3.0, -1.1) {\code{Crypto.mask}};
+    \draw[proved] (p.south -| l.north) -- (l.north);
+    \draw[proved] (p.south -| r.north) -- (r.north);
+    \draw[proved, line width=2pt] (l.south) -- ++(0,-0.45) -| (r.south);
+    \node[label, text=proofc, above] at (0, -1.85) {\textbf{one theorem}};
+    \node[trust, text width=8.4cm] (h) at (0, -2.75) {\code{IdealRng}: the generator answers like uniform bytes};
+    \draw[flow, trustc] (h.north) -- (0, -1.9);
+  \end{tikzpicture}
+
+  \slidebullets{
+    \item \code{maskRest v b}: the extracted \code{mask} with a generator that returns \code{b}.
+    \item So the bytes are an argument (\code{sendRest} in \#10).}
+  \proscons{%
+    \pro\ No change to Aeneas\\[0.1em]
+    \pro\ Q1: yes\\[0.1em]
+    \pro\ Weaker than 2}{%
+    \con\ Q2: a program per function\\[0.1em]
+    \con\ A budget, one state per program\\[0.1em]
+    \con\ Q3: no. The final state is dropped\\[0.1em]
+    \con\ Randomness must come from the state.\\\ \ \ \code{OsRng} keeps it in the OS}
+  \vfill
+\end{frame}
+
+% ===========================================================================
+\begin{frame}[t]{2 and 3: how they relate}
+  \source{bridging-examples \#9, \code{Common/Oracle/EntropyIdealRng.lean}}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[trust, text width=3.6cm] (e) at (-4.2, 0) {2 \code{EntropyRng fill states}};
+    \node[trust, text width=3.6cm] (i) at (4.2, 0) {3 \code{IdealRng fill (states n) n}};
+    \draw[->, very thick, proofc] ($(e.east)+(0,0.2)$) -- node[above, label, text=proofc] {implies, for every \code{n}} ($(i.west)+(0,0.2)$);
+    \draw[->, very thick, gapc, dashed] ($(i.west)+(0,-0.2)$) -- node[below, label, text=gapc] {does not imply} ($(e.east)+(0,-0.2)$);
+    \node[spec, text width=3.6cm] (t) at (-4.2, -2.0) {tape: meets both};
+    \node[impl, text width=3.6cm] (l) at (4.2, -2.0) {tape with a log:\\meets 3 only};
+  \end{tikzpicture}
+
+  \slidebullets{
+    \item The log keeps a copy of each returned byte in the state.
+    \item \code{IdealRng} drops the final state and cannot see it. \code{EntropyRng} forbids it.
+    \item Both directions proved in Lean: \code{idealRng\_of\_entropyRng}, \code{idealRng\_not\_entropyRng}.}
+  \vfill
+\end{frame}
+
+% ===========================================================================
+\begin{frame}[t]{2 or 3?}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[box, font=\small, text width=10cm] (q) at (0, 0) {What does the bridge theorem say about the generator state that the function returns?};
+    \node[proof, text width=5.2cm] (a) at (-3.4, -2.0) {\textbf{Nothing}, it is dropped\\[3pt] use 3, \code{IdealRng}\\the weaker assumption};
+    \node[proof, text width=5.2cm] (b) at (3.4, -2.0) {\textbf{Its distribution}\\[3pt] use 2, \code{EntropyRng}\\a next call starts from it};
+    \draw[flow] (q.south) ++(-1.5,0) -- (a.north);
+    \draw[flow] (q.south) ++(1.5,0) -- (b.north);
+  \end{tikzpicture}
+
+  \slidebullets{
+    \item Byte mask: one call. Both bridges exist, and the oracle one needs the weaker assumption.
+    \item Several calls on one generator, with 3: one oracle program for the whole sequence.
+    \item Several calls on one generator, with 2: one bridge per function, and the bridges compose.}
+  \vfill
+\end{frame}
+
+% ===========================================================================
+\begin{frame}[t]{Real generators and the tape}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[font=\small\bfseries, text=refc] at (-3.6, 0.7) {Tape};
+    \node[spec, text width=5.2cm] at (-3.6, -0.2) {prefills every byte it will return\\a call reads the next bytes};
+    \node[font=\small\bfseries, text=realc] at (3.6, 0.7) {\code{ChaCha20Rng}};
+    \node[impl, text width=5.2cm] at (3.6, -0.2) {prefills a 32-byte seed\\a call computes from the seed};
+    \node[font=\scriptsize, align=center, text=proofc] at (-3.6, -1.5) {exactly uniform\\meets 2 and 3};
+    \node[font=\scriptsize, align=center, text=gapc] at (3.6, -1.5) {uniform only against bounded attackers\\no exact assumption beyond 32 bytes};
+  \end{tikzpicture}
+
+  \slidebullets{
+    \item Both: random state prefilled, deterministic afterwards.
+    \item 2 and 3 are exact, so they describe the tape. A real generator approximates it for 3. For 2, its next state reveals past bytes.}
+  \vfill
+\end{frame}
+
+% ===========================================================================
+\begin{frame}[t]{4. Sampling effect in \code{Result}}
+  \source{Proposed by Sergiu. bridging-examples \#19 uses the patch from Marco in \href{https://github.com/Beneficial-AI-Foundation/toy-bridge}{toy-bridge}.}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[proof, text width=7.2cm] (p) at (0, 0) {\code{maskModel v = b <- randomBytes 1 ; ...}};
+    \node[impl, text width=2.8cm] (l) at (-3.0, -1.3) {Rust \code{mask}};
+    \node[spec, text width=2.8cm] (r) at (3.0, -1.3) {\code{Crypto.mask}};
+    \draw[proved] (p.south -| l.north) -- node[right, label, text=proofc] {\code{mask\_eq}} (l.north);
+    \draw[proved] (p.south -| r.north) -- node[right, label, text=proofc] {\code{maskModel\_bridge}} (r.north);
+    \draw[gapc, dashed, thick] (l.south) -- ++(0,-0.45) -| node[pos=0.25, below, label, text=gapc] {not proved} (r.south);
+    \node[trust, text width=3.0cm] (h) at (-6.6, -0.65) {\code{RandomFill}: \code{fill\_bytes} asks \code{Result.random}};
+    \draw[flow, trustc] (h.east) -- ($(p.south -| l.north)!0.5!(l.north)$);
+  \end{tikzpicture}
+
+  \slidebullets{
+    \item The patch adds \code{Result.random n}: ask for $n$ random bytes. Aeneas gives it no distribution.
+    \item \code{maskModel} is written by hand, as in 3. Only the model has a distribution.}
+  \proscons{%
+    \pro\ No seed and no budget\\[0.1em]
+    \pro\ Q3: yes. The state is unchanged\\[0.1em]
+    \pro\ Fits a stateless \code{OsRng}}{%
+    \con\ Q1: no. Two theorems, the link\\\ \ \ to Rust \code{mask} is not proved\\[0.1em]
+    \con\ Q2: a program per function\\[0.1em]
+    \con\ Changes \code{Result} for all users\\[0.1em]
+    \con\ \code{mvcgen} says nothing after a draw}
+  \vfill
+\end{frame}
+
+% ===========================================================================
+\begin{frame}[t]{2, 3 and 4: where the assumption sits}
+  \vfill
+  \centering
+  \begin{tikzpicture}[every node/.append style={font=\footnotesize}]
+    \node[font=\small\bfseries, text=proofc] at (-4.6, 0.6) {3 \code{IdealRng}};
+    \node[trust, text width=4.0cm, minimum height=1.3cm] at (-4.6, -0.3) {all answers of a program\\look uniform};
+    \node[font=\small\bfseries, text=proofc] at (0, 0.6) {2 \code{EntropyRng}};
+    \node[trust, text width=4.0cm, minimum height=1.3cm] at (0, -0.3) {each call on a sampled state\\gives uniform bytes};
+    \node[font=\small\bfseries, text=proofc] at (4.6, 0.6) {4 \code{RandomFill}};
+    \node[trust, text width=4.0cm, minimum height=1.3cm] at (4.6, -0.3) {each call asks\\\code{Result.random}};
+    \node[label, text width=3.8cm] at (-4.6, -1.6) {global, with a budget\\randomness in the state\\Aeneas unchanged};
+    \node[label, text width=3.8cm] at (0, -1.6) {per call, budget \code{n}\\randomness in the state\\Aeneas unchanged};
+    \node[label, text width=3.8cm] at (4.6, -1.6) {per call, no budget\\randomness in the call\\Aeneas patched};
+    \draw[->, thick, trustc] (-6.4, -2.6) -- node[below, label, text=trustc] {from whole programs to single calls} (6.4, -2.6);
+  \end{tikzpicture}
+
+  \slidenote{4: ``the random bytes are uniform'' stays outside Lean. 2 and 3: the stateless \code{OsRng} meets neither. The randomness must come from the state.}
+  \vfill
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}[t]{Side by side}
+  \vfill
+  \centering
+  \scriptsize
+  \renewcommand{\arraystretch}{1.6}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{l c c c c}
+    & \textbf{Aeneas unchanged} & \textbf{Q1: ``if'' in Lean} & \textbf{Q2: extra work} & \textbf{Q3: final state}\\
+    \hline
+    1 (Tape)          & \yes & \no  & tape length & -- \\
+    2 (Entropy)       & \yes & \yes & byte counts & \yes \\
+    3 (Oracle)        & \yes & \yes & program per function & \no \\
+    4 (Effect)        & \no  & \no  & program per function & \yes \\
+    \hline
+  \end{tabular}
+  \vfill
+\end{frame}
+
+\end{document}
