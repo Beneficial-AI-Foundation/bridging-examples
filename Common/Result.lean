@@ -72,6 +72,32 @@ theorem returns {α : Type} {m : Aeneas.Std.Result α} {p : α → Prop} (h : Ae
   | div => simp at h
   | random n k => exact absurd rfl (hm n k)
 
+/-- A failure does not start by sampling. -/
+@[simp] theorem noSample_fail {α : Type} (e : Aeneas.Std.Error) :
+    NoSample (Aeneas.Std.Result.fail e : Aeneas.Std.Result α) := by
+  intro n k h
+  have := congrArg Aeneas.Std.Result.match h
+  simp [Aeneas.Std.Result.match.fail, Aeneas.Std.Result.match.vis] at this
+
+/-- `returns` for a loop. If every step of the loop satisfies its specification and does not start
+by sampling, and the measure decreases, then the loop returns a value satisfying `post`. -/
+theorem loop_returns {α β : Type} (measure : α → Nat) (inv : α → Prop) (post : β → Prop)
+    (body : α → Aeneas.Std.Result (Aeneas.Std.ControlFlow α β)) (x : α)
+    (hBody : ∀ x, inv x → Aeneas.Std.WP.spec (body x) fun r =>
+      match r with
+      | .done y => post y
+      | .cont x' => inv x' ∧ measure x' < measure x)
+    (hNoSample : ∀ x, inv x → NoSample (body x)) (hInv : inv x) :
+    ∃ value, Aeneas.Std.loop body x = Aeneas.Std.Result.ok value ∧ post value := by
+  induction h : measure x using Nat.strong_induction_on generalizing x with
+  | _ n ih =>
+    subst h
+    obtain ⟨r, hr, hq⟩ := returns (hBody x hInv) (hNoSample x hInv)
+    rw [Aeneas.Std.loop, hr, Aeneas.Std.bind_ok]
+    cases r with
+    | done y => exact ⟨y, rfl, hq⟩
+    | cont x' => exact ih _ hq.2 x' hq.1 rfl
+
 /-- Use all result events when comparing output distributions. -/
 instance {α : Type} : MeasurableSpace (Aeneas.Std.Result α) := ⊤
 
